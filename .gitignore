@@ -1,0 +1,57 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg
+*.egg-info/
+.eggs/
+build/
+dist/
+wheels/
+.installed.cfg
+pip-wheel-metadata/
+
+# 仮想環境
+.venv/
+venv/
+env/
+ENV/
+
+# テスト / 型チェック
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+
+# ---- Secrets / 環境変数 ----
+.env
+.env.local
+.env.*.local
+
+# ---- Azure / azd ----
+.azure/
+
+# ---- 評価結果やレポート (再生成可能なデータ) ----
+data/report_*.json
+data/eval_result_*.json
+
+# ---- IDE / Editor ----
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json.example
+.idea/
+
+# ---- OS ----
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---- ログ ----
+*.log
+eval.log
