@@ -84,7 +84,7 @@ azd ai agent init --deploy-mode code --runtime python_3_13 --entry-point main.py
 | 7 | Foundry Project | **Use existing Foundry project** (Lab 0 で作った project を選ぶ) |
 | 8 | Azure Tenant | あなたのテナント |
 | 9 | Azure subscription | あなたのサブスクリプション |
-| 10 | Location | **North Central US** (Hosted Agent (preview) が利用可能な唯一のリージョン — Lab 0 でこのリージョンを選択済み) |
+| 10 | Location | **North Central US** (Lab 0 で作成した Foundry プロジェクトと同じリージョンを選ぶ) |
 | 11 | Model deployment | **`gpt-4.1-mini`** (Lab 0 でデプロイした同名の deployment) |
 | 12 | Model version | Lab 0 でデプロイしたバージョン |
 | 13 | Model SKU | **GlobalStandard** |
@@ -345,7 +345,7 @@ azd ai agent init --deploy-mode container --runtime python_3_13
 | `ResourceNotFound` / `DeploymentNotFound` | `FOUNDRY_PROJECT_ENDPOINT` と `FOUNDRY_MODEL` を Foundry ポータルで再確認 |
 | `Connection refused` on local run | ポート 8088 が他のプロセスに使われている |
 | **Hosted MCP が呼ばれない** | `instructions` でツールを明示 / `approval_mode="never_require"` を確認 |
-| `LocationNotAvailableForResourceType` | Hosted Agent (preview) は **North Central US のみ** で提供。Lab 0 でリージョンを間違えた場合はリソースグループを作り直そう |
+| `LocationNotAvailableForResourceType` | 選んだリージョンが Hosted Agent (preview) に対応していない。Lab 0 で作成した Foundry プロジェクトと同じ対応リージョンを選び直そう |
 
 > `azd ai agent provision` / `azd ai agent up` / `azd ai agent deploy` は **存在しません** 。必ず `azd up` / `azd provision` / `azd deploy` (拡張不要の上位コマンド) を使ってください。
 
