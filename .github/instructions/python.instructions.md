@@ -5,7 +5,7 @@ description: ワークショップ内の Python コード (Lab 2/3/4/5 の src/ 
 
 # Python コーディング規約 (Agent Framework × Foundry ワークショップ)
 
-このリポジトリの **すべての `.py` ファイル**に適用されます。リポジトリ ルートの [`.github/copilot-instructions.md`](../copilot-instructions.md) と [`skills/SKILL.md`](../../skills/SKILL.md) を合わせて参照してください。
+このリポジトリの **すべての `.py` ファイル**に適用されます。リポジトリ ルートの [`.github/copilot-instructions.md`](../copilot-instructions.md) と [`kb-1.8.0/README.md`](../../kb-1.8.0/README.md) を合わせて参照してください。
 
 ## 必須ルール
 
@@ -121,4 +121,4 @@ setup_observability(
 - print 出力は日本語で OK (ワークショップ言語)。
 - インデントは 4 スペース、行長は 100 文字を目安。
 
-詳細パターン (構造化出力 / MCP / Session) は [`skills/SKILL.md`](../../skills/SKILL.md) と [`skills/references/`](../../skills/references/) を参照。
+詳細パターン (構造化出力 / MCP / Session) は [`kb-1.8.0/README.md`](../../kb-1.8.0/README.md) と [`kb-1.8.0/`](../../kb-1.8.0/) を参照。

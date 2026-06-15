@@ -3,7 +3,7 @@
 このリポジトリは **GitHub Copilot を活用して Microsoft Agent Framework + Microsoft Foundry のエージェントを構築する 5 つの Lab を体験するハンズオン ワークショップ** です。Copilot Chat / Agent モードに対するリポジトリ ルートの規約をここに集約します。**Lab 文脈・既定値・命名規約・推奨手順** はすべてここで一致させてください。
 
 > [!IMPORTANT]
-> 詳細な API 知識は [`skills/SKILL.md`](../skills/SKILL.md) と [`skills/references/`](../skills/references/) に集約されています。コード生成・修正の際は必ずそちらを参照し、ここでは「ワークショップ全体の前提・既定値」のみを定義します。
+> 詳細な API 知識は [`kb-1.8.0/README.md`](../kb-1.8.0/README.md) と [`kb-1.8.0/`](../kb-1.8.0/) に集約されています。コード生成・修正の際は必ずそちらを参照し、ここでは「ワークショップ全体の前提・既定値」のみを定義します。
 
 ---
 
@@ -103,7 +103,7 @@ from azure.identity import DefaultAzureCredential  # 本番 / CI
 ## やってはいけないこと
 
 - ❌ 既存 [`docs/`](../docs/) の Lab 手順を勝手に書き換える (参加者が混乱する)。
-- ❌ [`skills/SKILL.md`](../skills/SKILL.md) の API パターンに反するコード (例: `agent.run_stream()`、`AzureAIClient`、`Message(text=...)`) を提案する。
+- ❌ [`kb-1.8.0/README.md`](../kb-1.8.0/README.md) の API パターンに反するコード (例: `agent.run_stream()`、`AzureAIClient`、`Message(text=...)`) を提案する。
 - ❌ `FOUNDRY_MODEL` 以外のモデル指定変数名 (`AZURE_OPENAI_MODEL` 等) を新規導入する。
 - ❌ `azd ai agent init --deploy-mode container` を既定として案内する (付録のみ)。
 - ❌ Hosted Agent を `eastus` 等 North Central US 以外で動かそうとする (preview 制限)。
@@ -111,9 +111,32 @@ from azure.identity import DefaultAzureCredential  # 本番 / CI
 
 ## 関連ドキュメント
 
-- [`skills/SKILL.md`](../skills/SKILL.md) — Agent Framework 1.8.1 の使い方 (主要 API)
-- [`skills/references/tools.md`](../skills/references/tools.md) — 関数ツール / ホスト型ツール
-- [`skills/references/mcp.md`](../skills/references/mcp.md) — ローカル / Hosted MCP 連携
-- [`skills/references/threads.md`](../skills/references/threads.md) — 会話継続 (Session / Conversation)
-- [`skills/references/advanced.md`](../skills/references/advanced.md) — ストリーミング / 構造化出力 / Observability / Evaluation
+- [`kb-1.8.0/README.md`](../kb-1.8.0/README.md) — Agent Framework 1.8.1 の使い方 (主要 API)
+- [`kb-1.8.0/api-reference/1.8.0/tools-function.md`](../kb-1.8.0/api-reference/1.8.0/tools-function.md) — 関数ツール / ホスト型ツール
+- [`kb-1.8.0/api-reference/1.8.0/tools-mcp.md`](../kb-1.8.0/api-reference/1.8.0/tools-mcp.md) — ローカル / Hosted MCP 連携
+- [`kb-1.8.0/api-reference/1.8.0/sessions.md`](../kb-1.8.0/api-reference/1.8.0/sessions.md) — 会話継続 (Session / Conversation)
+- [`kb-1.8.0/patterns/observability-otel.md`](../kb-1.8.0/patterns/observability-otel.md) — ストリーミング / 構造化出力 / Observability / Evaluation
 - [`.github/prompts/README.md`](./prompts/README.md) — スラッシュ プロンプトの使い方 (`/add-mcp-tool` 等)
+
+---
+
+## 🆕 GitHub Copilot Chatmode 拡張 (Plan G からの移植)
+
+このリポジトリには Plan G ([source](https://github.com/shinyay/ms-agent-framework-template-v1.8.0))
+から **2 つの specialist chatmodes** が追加されました。VS Code Insider の Copilot Chat
+モード dropdown で選択できます:
+
+| Chatmode | 用途 | この workshop での使い方 |
+|---|---|---|
+| `af-architect` | Pre-implementation design advisor | Lab 開始時、要件を設計ブリーフに変換するのに使う |
+| `af-implementer` | Code generation + verification | Lab 中、設計を Python コードに落とすのに使う |
+
+詳細:
+- 2 chatmodes 仕様: [`.github/agents/`](agents/)
+- KB (81 entries): [`kb-1.8.0/`](../kb-1.8.0/)
+
+> [!IMPORTANT]
+> このリポジトリの正規 KB は **[`kb-1.8.0/`](../kb-1.8.0/)** です (旧 `skills/SKILL.md` から
+> 2026-06-15 に移行)。chatmode 利用時 + Copilot にコード生成を任せる時、Copilot は
+> `kb-1.8.0/patterns/` `kb-1.8.0/anti-patterns/` `kb-1.8.0/api-reference/1.8.0/` を
+> 参照して canonical pattern を提供します。

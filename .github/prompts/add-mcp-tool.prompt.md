@@ -1,6 +1,6 @@
 ---
 name: add-mcp-tool
-description: 既存の Microsoft Agent Framework 1.8.1 エージェントに MCP サーバー (ローカル または Hosted) を 1 つ追加する。ワークショップの Lab 5 前段で使う想定。skills/SKILL.md と skills/references/mcp.md の正規パターンに従う。
+description: 既存の Microsoft Agent Framework 1.8.1 エージェントに MCP サーバー (ローカル または Hosted) を 1 つ追加する。ワークショップの Lab 5 前段で使う想定。kb-1.8.0/README.md と kb-1.8.0/api-reference/1.8.0/tools-mcp.md の正規パターンに従う。
 tools: ["read", "search", "edit"]
 ---
 
@@ -16,7 +16,7 @@ tools: ["read", "search", "edit"]
 - ユーザーが「Microsoft Learn MCP を使いたい」「外部 MCP サーバー `https://...` を追加したい」と依頼してきた。
 - 既に動くエージェントがあり、**最小差分で MCP を 1 つだけ追加**したい。
 
-新規エージェントを 0 から作る場合はこのプロンプトを使わず、[`skills/SKILL.md`](../../skills/SKILL.md) のクイックスタートから始める。
+新規エージェントを 0 から作る場合はこのプロンプトを使わず、[`kb-1.8.0/README.md`](../../kb-1.8.0/README.md) のクイックスタートから始める。
 
 ## Prerequisites
 
@@ -26,7 +26,7 @@ tools: ["read", "search", "edit"]
 - `tools=[...]` の引数がすでに存在し、追加できること。
 - `agent-framework-foundry` (1.8.1+) が `requirements.txt` または `pyproject.toml` で依存に入っていること。
 - `.env` が `FOUNDRY_PROJECT_ENDPOINT` と `FOUNDRY_MODEL` を含むこと。
-- 詳細パターンは [`skills/references/mcp.md`](../../skills/references/mcp.md) を参照。
+- 詳細パターンは [`kb-1.8.0/api-reference/1.8.0/tools-mcp.md`](../../kb-1.8.0/api-reference/1.8.0/tools-mcp.md) を参照。
 
 ## Inputs
 
@@ -61,7 +61,7 @@ tools: ["read", "search", "edit"]
 ## Steps
 
 1. **編集対象を読む**: `read_file` で対象ファイルの全文を取得し、`tools=[...]` の現在の中身を把握する。
-2. **既存パターンを照合**: [`skills/references/mcp.md`](../../skills/references/mcp.md) の「ユーザー指示からの推論ルール」表に従い Local / Hosted を確定。
+2. **既存パターンを照合**: [`kb-1.8.0/api-reference/1.8.0/tools-mcp.md`](../../kb-1.8.0/api-reference/1.8.0/tools-mcp.md) の「ユーザー指示からの推論ルール」表に従い Local / Hosted を確定。
 3. **Local MCP の場合**:
    - import 追加: `from agent_framework import MCPStreamableHTTPTool`
    - `async with` ブロックで MCP を開き、その内側でエージェントを作る:
@@ -127,6 +127,6 @@ python src/agent.py
 
 ## 参考
 
-- [`skills/SKILL.md`](../../skills/SKILL.md) — Agent Framework 全般
-- [`skills/references/mcp.md`](../../skills/references/mcp.md) — MCP 詳細 (Stdio / WebSocket 含む)
+- [`kb-1.8.0/README.md`](../../kb-1.8.0/README.md) — Agent Framework 全般
+- [`kb-1.8.0/api-reference/1.8.0/tools-mcp.md`](../../kb-1.8.0/api-reference/1.8.0/tools-mcp.md) — MCP 詳細 (Stdio / WebSocket 含む)
 - [`docs/05-cicd.md`](../../docs/05-cicd.md) — Lab 5

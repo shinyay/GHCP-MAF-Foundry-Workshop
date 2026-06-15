@@ -1,11 +1,11 @@
 ---
 applyTo: "**"
-description: Microsoft Agent Framework Python SDK (agent-framework-foundry) で Microsoft Foundry のエージェントを作るための skill。FoundryChatClient / FoundryAgent によるエージェント作成、ホスト型ツール（Code Interpreter / File Search / Web Search / Bing Grounding / Image Generation / Azure AI Search / Hosted MCP）や関数ツール（@tool）の追加、ローカル MCP 連携 (MCPStreamableHTTPTool 等)、AgentSession による会話継続、ストリーミング応答 (agent.run(..., stream=True))、構造化出力 (Pydantic / JSON Schema)、Hosted Agent としての azd デプロイ、OpenTelemetry observability、Cloud Evaluation などのタスクで skills/SKILL.md を参照する。
+description: Microsoft Agent Framework Python SDK (agent-framework-foundry) で Microsoft Foundry のエージェントを作るための skill。FoundryChatClient / FoundryAgent によるエージェント作成、ホスト型ツール（Code Interpreter / File Search / Web Search / Bing Grounding / Image Generation / Azure AI Search / Hosted MCP）や関数ツール（@tool）の追加、ローカル MCP 連携 (MCPStreamableHTTPTool 等)、AgentSession による会話継続、ストリーミング応答 (agent.run(..., stream=True))、構造化出力 (Pydantic / JSON Schema)、Hosted Agent としての azd デプロイ、OpenTelemetry observability、Cloud Evaluation などのタスクで kb-1.8.0/README.md を参照する。
 ---
 
 # agent-framework-foundry-py
 
-このリポジトリには [skills/SKILL.md](../../skills/SKILL.md) に Agent Skill が同梱されています。
+このリポジトリには [kb-1.8.0/README.md](../../kb-1.8.0/README.md) に Agent Skill が同梱されています。
 以下のようなタスクで Copilot が自動的に参照します。
 
 - Microsoft Foundry でエージェントを作る (`Agent(client=FoundryChatClient(...))` / `FoundryAgent`)
@@ -15,7 +15,7 @@ description: Microsoft Agent Framework Python SDK (agent-framework-foundry) で 
 - 構造化出力 (Pydantic / JSON Schema)、observability (`configure_otel_providers`)、Cloud Evaluation
 - Foundry Hosted Agent としてのデプロイ (`ResponsesHostServer` + `azd ai agent init` + `azd deploy`)
 
-詳細なリファレンスは [skills/references/](../../skills/references/) を参照してください。
+詳細なリファレンスは [kb-1.8.0/](../../kb-1.8.0/) を参照してください。
 
 ## 関連する規約
 

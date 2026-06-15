@@ -147,7 +147,7 @@ agent/main.py を以下のように書き換えてください。
   → Hosted Agent からは Hosted MCP として登録
 ````
 
-Copilot は [skills/SKILL.md の「Foundry Hosted Agent としてホストする」セクション](../skills/SKILL.md#foundry-hosted-agent-としてホストする) と [skills/references/mcp.md の「ユーザー指示からの推論ルール」](../skills/references/mcp.md#ユーザー指示からの推論ルール) を参照し、以下を自動で補完してくれます：
+Copilot は [kb-1.8.0/README.md の「Foundry Hosted Agent としてホストする」セクション](../kb-1.8.0/README.md#foundry-hosted-agent-としてホストする) と [kb-1.8.0/api-reference/1.8.0/tools-mcp.md の「ユーザー指示からの推論ルール」](../kb-1.8.0/api-reference/1.8.0/tools-mcp.md#ユーザー指示からの推論ルール) を参照し、以下を自動で補完してくれます：
 
 - `ResponsesHostServer` でラップして `server.run()` で起動
 - 認証は `DefaultAzureCredential`（コンテナ向け）

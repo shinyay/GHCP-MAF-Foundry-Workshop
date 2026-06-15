@@ -18,7 +18,7 @@
 
 ### 必須ツール
 
-シェル（PowerShell または bash）を開いて以下を実行し、すべてバージョンが表示されればOKです。
+シェル（PowerShell / bash / fish のいずれか）を開いて以下を実行し、すべてバージョンが表示されればOKです。
 
 ```bash
 python --version          # 3.13 以上
@@ -348,7 +348,7 @@ ls -la                 # Bash
 Get-ChildItem -Force   # PowerShell
 ```
 
-`docs/`、`skills/`、`.github/` があればOK。
+`docs/`、`kb-1.8.0/`、`.github/` があればOK。
 
 ---
 
@@ -370,6 +370,15 @@ python -m venv .venv
 source .venv/bin/activate    # Windows の Git Bash なら source .venv/Scripts/activate
 ```
 
+**Fish（macOS / Linux で fish shell を使う場合）**
+
+```fish
+python -m venv .venv
+source .venv/bin/activate.fish    # Fish は activate.fish を明示的に指定する必要あり
+```
+
+> Fish で `source .venv/bin/activate` を実行すると `Unsupported use of '='` エラーが出ます。必ず `activate.fish` を指定してください。
+
 ### パッケージインストール（両シェル共通）
 
 ```bash
@@ -377,12 +386,15 @@ pip install --upgrade pip
 
 # Lab 2 (ローカル MAF) 用 —— Agent Framework Python 1.0.0 GA 以降
 # `--pre` 不要。`aiohttp` は FoundryChatClient の HTTP クライアントが使用。
-pip install agent-framework-foundry aiohttp
+# `mcp` は `MCPStreamableHTTPTool` / `MCPStdioTool` 用 (Lab 2 で MRC MCP 接続に必須)。
+pip install agent-framework-foundry aiohttp mcp
 pip install azure-identity python-dotenv pydantic
 
 # Lab 4 (Cloud Evaluation) 用 —— evals API は 2.2.0 以降で安定化
 pip install "azure-ai-projects>=2.2.0"
 ```
+
+> `mcp` は `agent-framework-core` の **optional extra** (`agent-framework-core[all]` に含まれる) なので、`agent-framework-foundry` だけインストールしても入りません。Lab 2 で `MCPStreamableHTTPTool` を使うので**明示的にインストール**してください。インストールしないと runtime に `ModuleNotFoundError: 'MCPStreamableHTTPTool' requires 'mcp'` で fail します (class import 自体は成功するため compileall では検出されません)。
 
 > Agent Framework Python 1.0.0 は 2026 年初頭に GA したため `--pre` は不要になりました。ただし `agent-framework[all]` umbrella は依存解決に時間がかかるので、上記のように `agent-framework-foundry` + 個別依存を明示するのが安定します。
 
@@ -396,9 +408,10 @@ pip install "azure-ai-projects>=2.2.0"
 python -c "import agent_framework; print(agent_framework.__version__)"
 python -c "from agent_framework.foundry import FoundryChatClient; print('FoundryChatClient OK')"
 python -c "from azure.ai.projects import AIProjectClient; print('AIProjectClient OK')"
+python -c "from mcp.client.streamable_http import streamable_http_client; print('mcp streamable_http OK')"
 ```
 
-3 行とも例外なく実行できればOKです。
+4 行とも例外なく実行できればOKです。最後の `mcp` import test は Lab 2 で `MCPStreamableHTTPTool` が runtime に必要とする lazy import を事前検証します。
 
 ---
 
@@ -519,9 +532,8 @@ python scripts/check_setup.py
 - [ ] **Foundry プロジェクト作成済み（Overview が Succeeded / リージョンは North Central US）**
 - [ ] **自分に Foundry Project Manager (`eadc314b-...`) が割り当てられている**
 - [ ] **gpt-4.1-mini モデルデプロイ済み（Models + endpoints で Succeeded）**
-- [ ] `.venv` 作成・有効化・パッケージインストール済み（`from agent_framework.foundry import FoundryChatClient` が成功）
+- [ ] `.venv` 作成・有効化・パッケージインストール済み（`from agent_framework.foundry import FoundryChatClient` + `from mcp.client.streamable_http import streamable_http_client` が成功）
 - [ ] `.env` に `FOUNDRY_PROJECT_ENDPOINT` と `FOUNDRY_MODEL` を記入済み（`.env.sample` をコピーした）
-- [ ] **`scripts/check_setup.py` の疎通テスト成功**
 - [ ] **`scripts/check_setup.py` の疎通テスト成功**
 
 ---

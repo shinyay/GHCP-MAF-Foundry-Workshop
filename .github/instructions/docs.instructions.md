@@ -1,11 +1,11 @@
 ---
 applyTo: "**/*.md"
-description: ワークショップの Markdown ドキュメント (docs/、solutions/、skills/、README.md) を統一スタイルで書くための規約。
+description: ワークショップの Markdown ドキュメント (docs/、solutions/、kb-1.8.0/、README.md) を統一スタイルで書くための規約。
 ---
 
 # Markdown 規約 (Agent Framework × Foundry ワークショップ)
 
-このリポジトリの **すべての `.md` ファイル**に適用されます。Lab 手順書 (`docs/`)、模範解答の README (`solutions/`)、スキル (`skills/`) のすべてに適用してください。
+このリポジトリの **すべての `.md` ファイル**に適用されます。Lab 手順書 (`docs/`)、模範解答の README (`solutions/`)、KB エントリ (`kb-1.8.0/`) のすべてに適用してください。
 
 ## 必須ルール
 
@@ -41,7 +41,7 @@ description: ワークショップの Markdown ドキュメント (docs/、solut
 - リポジトリ内リンクは **repo-relative** で書く (`./` 起点ではなく、ファイル位置からの相対パス)。
 
   ```markdown
-  [`skills/SKILL.md`](../../skills/SKILL.md)
+  [`kb-1.8.0/README.md`](../../kb-1.8.0/README.md)
   [`solutions/lab2/src/agent.py`](../../solutions/lab2/src/agent.py)
   ```
 
@@ -98,7 +98,7 @@ description: ワークショップの Markdown ドキュメント (docs/、solut
   ```
 
 - **模範解答 (`solutions/lab*/README.md`)** からは対応する Lab 手順書を必ず先頭でリンクする。
-- **スキル (`skills/SKILL.md` と `skills/references/`)** はパッケージ API の事実関係を扱う。Lab 手順を書かない (役割を混ぜない)。
+- **スキル (`kb-1.8.0/README.md` と `kb-1.8.0/`)** はパッケージ API の事実関係を扱う。Lab 手順を書かない (役割を混ぜない)。
 
 ## やってはいけないこと
 
