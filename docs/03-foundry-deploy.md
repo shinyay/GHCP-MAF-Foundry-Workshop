@@ -57,30 +57,6 @@ Get-Content .env | Select-String "FOUNDRY_PROJECT_ENDPOINT|FOUNDRY_MODEL"
 grep -E "FOUNDRY_PROJECT_ENDPOINT|FOUNDRY_MODEL" .env
 ```
 
-### ロール確認（重要）
-
-Hosted Agent のデプロイには **Foundry Project Manager** が必須です。Lab 0 の 0-3 で割り当てたはずですが、念のため：
-
-**PowerShell**
-
-```pwsh
-$myObjId = az ad signed-in-user show --query id -o tsv
-$projectId = "<\u3042\u306a\u305f\u306e Foundry \u30d7\u30ed\u30b8\u30a7\u30af\u30c8\u306e\u30ea\u30bd\u30fc\u30b9 ID>"
-az role assignment list --assignee $myObjId --scope $projectId `
-    --query "[?roleDefinitionId.contains(@,'eadc314b-1a2d-4efa-be10-5d325db5065e')]" -o tsv
-```
-
-**Bash**
-
-```bash
-MY_OBJ_ID=$(az ad signed-in-user show --query id -o tsv)
-PROJECT_ID="<あなたの Foundry プロジェクトのリソース ID>"
-az role assignment list --assignee "$MY_OBJ_ID" --scope "$PROJECT_ID" \
-    --query "[?contains(roleDefinitionId,'eadc314b-1a2d-4efa-be10-5d325db5065e')]" -o tsv
-```
-
-空文字なら未割り当て。Lab 0 の 0-3 のロール割り当てコマンドを再実行してください。
-
 ---
 
 ## 3-2. `azd ai agent init` でスキャフォールド (ソースコードデプロイ)
@@ -93,7 +69,7 @@ cd agent
 azd ai agent init --deploy-mode code --runtime python_3_13 --entry-point main.py
 ```
 
-> **`--deploy-mode code` が重要です** 。これにより Docker 不要のソースコードデプロイ (`main.py` + `requirements.txt` をそのまま zip して Foundry サービス側でホスト) モードになります。コンテナイメージビルドと ACR は不要になり、デプロイ時間も大幅に短縮されます (概ね 1ツ 2 分)。
+> **`--deploy-mode code` が重要です** 。これにより Docker 不要のソースコードデプロイ (`main.py` + `requirements.txt` をそのまま zip して Foundry サービス側でホスト) モードになります。コンテナイメージビルドと ACR は不要になり、デプロイ時間も大幅に短縮されます (概ね 1〜2 分)。
 
 インタラクティブな質問に答えます (回答例は公式 Quickstart 準拠)：
 
@@ -147,7 +123,7 @@ agent/main.py を以下のように書き換えてください。
   → Hosted Agent からは Hosted MCP として登録
 ````
 
-Copilot は [kb-1.8.0/README.md の「Foundry Hosted Agent としてホストする」セクション](../kb-1.8.0/README.md#foundry-hosted-agent-としてホストする) と [kb-1.8.0/api-reference/1.8.0/tools-mcp.md の「ユーザー指示からの推論ルール」](../kb-1.8.0/api-reference/1.8.0/tools-mcp.md#ユーザー指示からの推論ルール) を参照し、以下を自動で補完してくれます：
+Copilot は [Microsoft Agent Framework の Foundry Hosted Agent サンプル (`ResponsesHostServer` + Hosted MCP)](https://github.com/microsoft/agent-framework/tree/main/python/samples/04-hosting/foundry-hosted-agents) と [kb-1.8.0/api-reference/1.8.0/tools-mcp.md の「ユーザー指示からの推論ルール」](../kb-1.8.0/api-reference/1.8.0/tools-mcp.md#ユーザー指示からの推論ルール) を参照し、以下を自動で補完してくれます：
 
 - `ResponsesHostServer` でラップして `server.run()` で起動
 - 認証は `DefaultAzureCredential`（コンテナ向け）
@@ -248,7 +224,7 @@ Deploying services (azd deploy)
 
 完了まで 3〜5 分 (コンテナ方式より 2〜3 分高速)。
 
-> `azd ai agent provision` / `azd ai agent up` / `azd ai agent deploy` は **存在しません** 。必ず `azd up` / `azd provision` / `azd deploy` (拡張不要) を使ってください。もし provision と deploy を分けてデバッグしたい場合は `azd provision` → `azd deploy` の順で召べます。
+> `azd ai agent provision` / `azd ai agent up` / `azd ai agent deploy` は **存在しません** 。必ず `azd up` / `azd provision` / `azd deploy` (拡張不要) を使ってください。もし provision と deploy を分けてデバッグしたい場合は `azd provision` → `azd deploy` の順で呼べます。
 
 ---
 

@@ -81,8 +81,10 @@ ghcp-maf-foundry-workshop/
 │  ├─ 04-trace-evaluation.md     ← Lab 4
 │  └─ 05-cicd.md                 ← Lab 5
 ├─ kb-1.8.0/                      ← MAF Copilot 用詳細 KB (chatmodes が参照)
-│  ├─ SKILL.md
-│  └─ references/
+│  ├─ README.md
+│  ├─ patterns/  anti-patterns/
+│  ├─ api-reference/1.8.0/
+│  └─ migration-guides/
 ├── .github/
 │  ├─ instructions/              ← Copilot が自動読込する instruction
 │  └─ workflows/                 ← Lab 5 で作成

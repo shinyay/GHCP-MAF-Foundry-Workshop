@@ -221,12 +221,16 @@ jobs:
 
 ```bash
 git checkout main
-git add .github/workflows/pr-check.yml ci/run_evaluate.py
-git commit -m "ci: add PR check workflow with user token auth"
+# CI の evaluate ジョブが実行する評価スクリプト本体 (Lab 4 で作った src/evaluate.py) も
+# 一緒に main へ載せる。これが無いと CI 側で `FileNotFoundError: src/evaluate.py` になる。
+git add .github/workflows/pr-check.yml ci/run_evaluate.py src/evaluate.py
+git commit -m "ci: add PR check workflow + evaluation script"
 git push origin main
 ```
 
 main への push では何も起動しません (PR Check は `pull_request` トリガのみ)。次の 5-3 で作る PR で初めて Actions が走ります。
+
+> `src/evaluate.py` は Lab 4 で作成済みのものをそのまま載せます (CI はこれを無改変で実行します)。まだ手元に無い場合は Lab 4 を先に完了してください。
 
 ---
 
@@ -310,7 +314,10 @@ gh pr create --title "feat: add Learn MCP" --body "MRC に加えて Microsoft Le
 > - Run ID: `evalrun_xxxxxxxx`
 > - Result: <https://ai.azure.com/evaluation/eval_xxxx/runs/evalrun_xxxx>
 
-URL を開いて、`task_adherence` / `tool_call_accuracy` / `intent_resolution` / `coherence` の各スコアと、Learn MCP の tool call が増えているかを確認してください。
+URL を開いて、`task_adherence` / `tool_call_accuracy` / `intent_resolution` / `coherence` の各スコアを確認してください。
+
+> [!NOTE]
+> この PR 時点での評価対象は **まだ再デプロイ前の Hosted Agent (`ms-updates-agent` version 1 = MRC のみ)** です。コードに Learn MCP を足しても、デプロイは 5-5 (マージ後) なので評価には反映されません。Learn MCP 追加の効果を測りたい場合は、5-5 で `azd deploy` した後に評価を再実行してスコアを比較してください。
 
 ---
 

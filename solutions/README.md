@@ -26,10 +26,11 @@ solutions/
 │   └── src/
 │       └── evaluate.py               # 4-2-3 完成版 (Cloud Evaluation スクリプト)
 └── lab5/
-    └── .github/
-        └── workflows/
-            ├── pr-check.yml          # 5-2 完成版 (PR 評価 + コメント)
-            └── deploy.yml            # 5-2 完成版 (main マージで azd deploy)
+    ├── .github/
+    │   └── workflows/
+    │       └── pr-check.yml          # 5-2 完成版 (PR 評価 + コメント)
+    └── ci/
+        └── run_evaluate.py           # 5-2 完成版 (CI から呼ぶ評価ランナー)
 ```
 
 > **データファイル** (`data/eval_inputs.json`)、**環境変数テンプレート** (`.env.sample`)、**`.gitignore`** は **リポジトリ ルートに最初から配置済み** です。Lab 0 / Lab 4 でそのまま使えるようにしてあります。

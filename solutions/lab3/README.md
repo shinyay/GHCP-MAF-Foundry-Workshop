@@ -2,7 +2,7 @@
 
 このフォルダーには **`main.py` と `requirements.txt` の完成版のみ** を置いてあります。
 
-## なぜ `azure.yaml` / `agent.manifest.json` / `infra/` を置いていないか
+## なぜ `azure.yaml` / `agent.manifest.yaml` / `infra/` を置いていないか
 
 これらのファイルは **`azd ai agent init --deploy-mode code`** が対話的に生成します。
 バージョンや回答内容（モデルバージョン、SKU、capacity、リージョン など）によって中身が変わるため、
@@ -35,7 +35,7 @@ cp solutions/lab3/agent/main.py         agent/main.py
 cp solutions/lab3/agent/requirements.txt agent/requirements.txt
 ```
 
-> `azd ai agent init` が生成する `agent.manifest.json` の `env` セクションが `FOUNDRY_MODEL` を含んでいることを確認してください。最新の Quickstart テンプレートは既定で `FOUNDRY_MODEL` を出力します。`AZURE_AI_MODEL_DEPLOYMENT_NAME` だけしか書かれていない場合は `FOUNDRY_MODEL` への mapping を追記してください。
+> `azd ai agent init` が生成する `agent.manifest.yaml` の `env` セクションが `FOUNDRY_MODEL` を含んでいることを確認してください。最新の Quickstart テンプレートは既定で `FOUNDRY_MODEL` を出力します。`AZURE_AI_MODEL_DEPLOYMENT_NAME` だけしか書かれていない場合は `FOUNDRY_MODEL` への mapping を追記してください。
 
 あとは Lab 3 のとおり：
 
