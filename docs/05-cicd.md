@@ -246,7 +246,7 @@ src/agent.py を更新してください。
 - instructions に「MRC で取得できない技術詳細や手順は Learn MCP で補足してよい」を追加
 ````
 
-Copilot は [skills/references/mcp.md](../skills/references/mcp.md) を参照し、`async with` で複数 MCP を同時に開く形に書き換えてくれます。完成イメージ：
+Copilot は [kb-1.8.0/api-reference/1.8.0/tools-mcp.md](../kb-1.8.0/api-reference/1.8.0/tools-mcp.md) を参照し、`async with` で複数 MCP を同時に開く形に書き換えてくれます。完成イメージ：
 
 ```python
 # src/agent.py (抜粋)
@@ -277,7 +277,7 @@ async def main() -> None:
         # ... 既存の対話ループはそのまま
 ```
 
-Lab 3 でデプロイ済みの `agent/main.py` も同様に Learn MCP を追加します (Hosted Agent では `client.get_mcp_tool` を使う点に注意 — [skills/references/mcp.md の推論ルール](../skills/references/mcp.md#ユーザー指示からの推論ルール) で Copilot が自動判別)。
+Lab 3 でデプロイ済みの `agent/main.py` も同様に Learn MCP を追加します (Hosted Agent では `client.get_mcp_tool` を使う点に注意 — [kb-1.8.0/api-reference/1.8.0/tools-mcp.md の推論ルール](../kb-1.8.0/api-reference/1.8.0/tools-mcp.md#ユーザー指示からの推論ルール) で Copilot が自動判別)。
 
 ````
 agent/main.py にも同じく Microsoft Learn MCP を Hosted MCP として追加してください。

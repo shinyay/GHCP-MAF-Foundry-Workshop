@@ -106,14 +106,14 @@ src/evaluate.py を新規作成してください。
   Hosted Agent の名前とバージョンは環境変数から読むこと
 ````
 
-Copilot は [skills/SKILL.md](../skills/SKILL.md) と [skills/references/advanced.md の Evaluation セクション](../skills/references/advanced.md#evaluation--foundry-cloud-evaluation) を参照し、以下を自動で補完してくれます：
+Copilot は [kb-1.8.0/README.md](../kb-1.8.0/README.md) と [kb-1.8.0/patterns/observability-otel.md の Evaluation セクション](../kb-1.8.0/patterns/observability-otel.md#evaluation--foundry-cloud-evaluation) を参照し、以下を自動で補完してくれます：
 
 - `azure-ai-projects` の `AIProjectClient` → `get_openai_client()` で client を取得
 - `data_source_config` に `"include_sample_schema": True` を必ず付ける
 - 各評価器を `{"type": "azure_ai_evaluator", "evaluator_name": "builtin.xxx", "initialization_parameters": {"deployment_name": ...}, "data_mapping": {...}}` の正しい 5 点セットで構成
-- `tool_call_accuracy` / `task_adherence` は `sample.output_items`、その他は `sample.output_text` を `data_mapping.response` に ([advanced.md の振り分け表](../skills/references/advanced.md#data_mappingresponse-の評価器ごとの推奨値))
+- `tool_call_accuracy` / `task_adherence` は `sample.output_items`、その他は `sample.output_text` を `data_mapping.response` に ([advanced.md の振り分け表](../kb-1.8.0/patterns/observability-otel.md#data_mappingresponse-の評価器ごとの推奨値))
 - `data_source.type = "azure_ai_target_completions"` + `input_messages` テンプレート + `target.type = "azure_ai_agent"`
-- run をポーリングして結果 URL を表示するパターン ([advanced.md のポーリング例](../skills/references/advanced.md#完了までポーリングして結果-url-を表示するパターン))
+- run をポーリングして結果 URL を表示するパターン ([advanced.md のポーリング例](../kb-1.8.0/patterns/observability-otel.md#完了までポーリングして結果-url-を表示するパターン))
 - Hosted Agent の名前とバージョンは環境変数から読む
 
 完成イメージ：

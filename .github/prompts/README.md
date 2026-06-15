@@ -16,7 +16,7 @@
 2. 入力欄で **`/`** を押すと利用可能なプロンプトが補完される。
 3. 例: `/add-mcp-tool` を選んで Enter。
 4. プロンプトが追加の入力 (MCP サーバーの URL など) を聞いてくるので、それに答える。
-5. エージェントが [`skills/SKILL.md`](../../skills/SKILL.md) と [`skills/references/`](../../skills/references/) を参照しながら、対応する `src/` ファイルを編集する。
+5. エージェントが [`kb-1.8.0/README.md`](../../kb-1.8.0/README.md) と [`kb-1.8.0/`](../../kb-1.8.0/) を参照しながら、対応する `src/` ファイルを編集する。
 
 ## いつ使うか
 
@@ -55,4 +55,4 @@ tools: ["read", "search", "edit"]   # 使うツール (任意)
 
 - [`copilot-instructions.md`](../copilot-instructions.md) — ワークショップ全体の既定値
 - [`instructions/`](../instructions/) — Python / Markdown の自動適用スタイル
-- [`skills/SKILL.md`](../../skills/SKILL.md) — Agent Framework API の知識ベース
+- [`kb-1.8.0/README.md`](../../kb-1.8.0/README.md) — Agent Framework API の知識ベース

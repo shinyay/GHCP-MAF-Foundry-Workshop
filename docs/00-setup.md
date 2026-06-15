@@ -348,7 +348,7 @@ ls -la                 # Bash
 Get-ChildItem -Force   # PowerShell
 ```
 
-`docs/`、`skills/`、`.github/` があればOK。
+`docs/`、`kb-1.8.0/`、`.github/` があればOK。
 
 ---
 

@@ -80,7 +80,7 @@ ghcp-maf-foundry-workshop/
 │  ├─ 03-foundry-deploy.md       ← Lab 3
 │  ├─ 04-trace-evaluation.md     ← Lab 4
 │  └─ 05-cicd.md                 ← Lab 5
-├─ skills/                        ← MAF 用 Agent Skill 本体
+├─ kb-1.8.0/                      ← MAF Copilot 用詳細 KB (chatmodes が参照)
 │  ├─ SKILL.md
 │  └─ references/
 ├── .github/

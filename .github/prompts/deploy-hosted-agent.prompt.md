@@ -141,4 +141,4 @@ az rest --method POST \
 - [`solutions/lab3/agent/requirements.txt`](../../solutions/lab3/agent/requirements.txt)
 - [`solutions/lab3/README.md`](../../solutions/lab3/README.md)
 - [`docs/03-foundry-deploy.md`](../../docs/03-foundry-deploy.md) — Lab 3 手順書
-- [`skills/SKILL.md`](../../skills/SKILL.md) — Agent Framework 全般
+- [`kb-1.8.0/README.md`](../../kb-1.8.0/README.md) — Agent Framework 全般
