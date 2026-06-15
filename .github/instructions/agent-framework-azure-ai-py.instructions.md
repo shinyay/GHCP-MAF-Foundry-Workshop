@@ -17,3 +17,12 @@ description: Microsoft Agent Framework Python SDK (agent-framework-foundry) で 
 
 詳細なリファレンスは [skills/references/](../../skills/references/) を参照してください。
 
+## 関連する規約
+
+ワークショップ全体の既定値・ファイル別スタイルは次に分離されています。本ファイルは API 知識への入口、以下はコーディング規約です。
+
+- [`copilot-instructions.md`](../copilot-instructions.md) — ワークショップ全体のバージョン / 環境 / 認証 既定値
+- [`python.instructions.md`](./python.instructions.md) — `**/*.py` 適用の Python 規約
+- [`docs.instructions.md`](./docs.instructions.md) — `**/*.md` 適用の Markdown 規約
+- [`../prompts/README.md`](../prompts/README.md) — スラッシュ プロンプト一覧と使い方
+
