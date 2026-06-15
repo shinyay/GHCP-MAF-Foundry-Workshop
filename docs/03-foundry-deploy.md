@@ -39,7 +39,7 @@ requirements.txt                                    │
 
 ```bash
 azd version                       # 1.25.3 以上 (source-code deploy に必要)
-azd ext list                      # microsoft.foundry が表示されること
+azd ext list                      # azure.ai.agents が表示されること
 az account show
 ```
 
@@ -110,10 +110,10 @@ agent/
 
 ## 3-3. `main.py` を Lab 2 のロジックに差し替える
 
-`agent/main.py` を開いて、テンプレートを置き換えます。Copilot Chat で：
+`agent/<your agent name>/main.py` を開いて、テンプレートを置き換えます。Copilot Chat で：
 
 ````
-agent/main.py を以下のように書き換えてください。
+agent配下のmain.py を以下のように書き換えてください。
 
 要件：
 - Lab 2 の src/agent.py と同じ「MSUpdatesAgent」を、
@@ -201,7 +201,7 @@ python-dotenv
 
 ## 3-4. `azd up` で provision + deploy を一括実行
 
-`agent/` ディレクトリで：
+`agent/<your agent name>/` ディレクトリ配下のmain.pyで：
 
 ```bash
 azd up
@@ -338,7 +338,7 @@ azd ai agent init --deploy-mode container --runtime python_3_13
 
 | 症状 | 対処 |
 |---|---|
-| `azd ai agent init` が `--deploy-mode` オプションを認識しない | `azd ext upgrade microsoft.foundry` を実行して拡張を最新化 |
+| `azd ai agent init` が `--deploy-mode` オプションを認識しない | `azd extension upgrade azure.ai.agents` を実行して拡張を最新化 |
 | `SubscriptionNotRegistered` | `az provider register --namespace Microsoft.CognitiveServices` |
 | `AuthorizationFailed` during provisioning | **Foundry Project Manager** + **Contributor** が必要。Lab 0 を再確認 |
 | `AuthenticationError` / `DefaultAzureCredential` failure | `azd auth logout && azd auth login` |
