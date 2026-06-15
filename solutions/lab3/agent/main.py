@@ -1,7 +1,9 @@
 """Lab 3 完成版: Foundry Hosted Agent (Microsoft Updates Agent)
 
-このファイルは ``azd ai agent init`` で生成されるテンプレートを、Lab 2 のロジックで置き換えたものです。
-``agent/`` ディレクトリ配下に置いて、``azd provision`` → ``azd deploy`` でデプロイします。
+このファイルは ``azd ai agent init --deploy-mode code`` で生成される
+``main.py`` テンプレートを Lab 2 のロジックで置き換えたものです。
+``agent/`` ディレクトリ配下に置いて、``azd up`` でデプロイします
+(provision + deploy を一括実行)。
 """
 
 import os
@@ -24,7 +26,7 @@ MRC_URL = "https://www.microsoft.com/releasecommunications/mcp"
 def main() -> None:
     client = FoundryChatClient(
         project_endpoint=os.environ["FOUNDRY_PROJECT_ENDPOINT"],
-        model=os.environ["AZURE_AI_MODEL_DEPLOYMENT_NAME"],
+        model=os.environ["FOUNDRY_MODEL"],
         credential=DefaultAzureCredential(),
     )
 

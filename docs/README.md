@@ -40,7 +40,7 @@ MCP エンドポイント：`https://www.microsoft.com/releasecommunications/mcp
 
 | Lab | 内容 | 想定時間 |
 |-----|-----|---|
-| Lab 0 | [環境セットアップ（リポジトリ fork + Foundry プロジェクト + gpt-5.4-mini デプロイ）](00-setup.md) | 30 分 |
+| Lab 0 | [環境セットアップ（リポジトリ fork + Foundry プロジェクト + gpt-4.1-mini デプロイ）](00-setup.md) | 30 分 |
 | Lab 1 | [Agent Skills の作成と Copilot での利用](01-agent-skills.md) | 20 分 |
 | Lab 2 | [MAF で Microsoft 最新情報エージェント作成](02-maf-agent.md)（Copilot に作らせる） | 40 分 |
 | Lab 3 | [Hosted Agent を Foundry へデプロイ](03-foundry-deploy.md) | 40 分 |
@@ -62,8 +62,8 @@ MCP エンドポイント：`https://www.microsoft.com/releasecommunications/mcp
 | 必須 | GitHub Copilot 拡張 | `code --list-extensions` | `GitHub.copilot` / `GitHub.copilot-chat` |
 | 必須 | Azure サブスクリプション | | Foundry プロジェクト作成権限 + **Foundry Project Manager** |
 | 必須 | **GitHub アカウント** | | Lab 5 でこのリポジトリを fork して Actions を動かす |
-| Lab 3+ | Azure Developer CLI (azd) 1.25.0+ | `azd version` | |
-| Lab 3+ | `azd ai agent` 拡張 0.1.34-preview+ | `azd ext list` | |
+| Lab 3+ | Azure Developer CLI (azd) 1.25.3+ | `azd version` | |
+| Lab 3+ | `microsoft.foundry` 拡張 | `azd ext list` | |
 | Lab 4 | Docker（任意：Aspire Dashboard でローカルトレース確認） | `docker --version` | ★Stretch |
 
 > セットアップ手順は [Lab 0](00-setup.md) で詳細に案内します。

@@ -18,8 +18,9 @@ jobs:
       - name: Install
         run: |
           python -m pip install --upgrade pip
-          pip install "agent-framework-foundry" --pre
-          pip install azure-identity python-dotenv pytest "azure-ai-projects>=2.1.0"
+          # Agent Framework 1.0 GA 以降は --pre 不要。aiohttp を明示的にインストール。
+          pip install agent-framework-foundry aiohttp
+          pip install azure-identity python-dotenv pytest "azure-ai-projects>=2.2.0"
       - name: Test
         run: pytest tests/ -v || true
 
@@ -34,8 +35,8 @@ jobs:
       - name: Install
         run: |
           python -m pip install --upgrade pip
-          pip install "agent-framework-foundry" --pre
-          pip install azure-identity python-dotenv "azure-ai-projects>=2.1.0"
+          pip install agent-framework-foundry aiohttp
+          pip install azure-identity python-dotenv "azure-ai-projects>=2.2.0"
       - name: Run Cloud Evaluation
         id: eval
         env:
@@ -43,7 +44,7 @@ jobs:
           # ci/run_evaluate.py がこれを AzureCliCredential の代わりに使う
           AZURE_AI_AUTH_TOKEN: ${{ secrets.AZURE_AI_AUTH_TOKEN }}
           FOUNDRY_PROJECT_ENDPOINT: ${{ vars.FOUNDRY_PROJECT_ENDPOINT }}
-          AZURE_AI_MODEL_DEPLOYMENT_NAME: ${{ vars.AZURE_AI_MODEL_DEPLOYMENT_NAME }}
+          FOUNDRY_MODEL: ${{ vars.FOUNDRY_MODEL }}
           HOSTED_AGENT_NAME: ${{ vars.HOSTED_AGENT_NAME }}
           HOSTED_AGENT_VERSION: ${{ vars.HOSTED_AGENT_VERSION }}
         run: |

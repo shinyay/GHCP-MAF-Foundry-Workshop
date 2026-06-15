@@ -23,7 +23,7 @@ project_client = AIProjectClient(
 client = project_client.get_openai_client()
 
 # --- 2. ジャッジモデルと Hosted Agent 名 ---
-model_deployment = os.environ["AZURE_AI_MODEL_DEPLOYMENT_NAME"]
+model_deployment = os.environ["FOUNDRY_MODEL"]
 agent_name = os.environ["HOSTED_AGENT_NAME"]
 agent_version = os.environ.get("HOSTED_AGENT_VERSION", "1")
 

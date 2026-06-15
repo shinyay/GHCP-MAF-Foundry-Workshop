@@ -24,7 +24,7 @@ class WeatherReport(BaseModel):
 agent = Agent(
     client=FoundryChatClient(
         project_endpoint="https://<account>.services.ai.azure.com/api/projects/<project>",
-        model="gpt-5.4-mini",
+        model="gpt-4.1-mini",
         credential=AzureCliCredential(),
     ),
     instructions="あなたは天気アシスタント。常に WeatherReport スキーマで返してください。",
@@ -172,7 +172,7 @@ export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
 ### インストール
 
 ```bash
-pip install "azure-ai-projects>=2.1.0" azure-identity
+pip install "azure-ai-projects>=2.2.0" azure-identity
 ```
 
 ### 評価の基本フロー
@@ -205,7 +205,7 @@ testing_criteria = [
         "name": "task_adherence",
         "evaluator_name": "builtin.task_adherence",
         "initialization_parameters": {
-            "deployment_name": os.environ["AZURE_AI_MODEL_DEPLOYMENT_NAME"],
+            "deployment_name": os.environ["FOUNDRY_MODEL"],
         },
         "data_mapping": {
             "query": "{{item.query}}",

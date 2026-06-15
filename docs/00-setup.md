@@ -3,10 +3,10 @@
 ## この Lab で行うこと
 
 - **ワークショップリポジトリを自分の GitHub アカウントに fork** (Lab 5 で GitHub Actions を実行するために必須)
-- 必要なツールのインストール確認（Python 3.13+, Azure CLI, GitHub CLI, azd, azd ai agent 拡張）
+- 必要なツールのインストール確認（Python 3.13+, Azure CLI, GitHub CLI, azd, azd microsoft.foundry 拡張）
 - Azure サブスクリプションへのサインインと**ロール確認（Foundry Project Manager 必須）**
-- **Microsoft Foundry プロジェクトを新規作成**
-- **gpt-5.4-mini モデルをデプロイ**
+- **Microsoft Foundry プロジェクトを新規作成** (リージョンは Hosted Agent に合わせて **North Central US**)
+- **gpt-4.1-mini モデルをデプロイ**
 - Python 仮想環境準備
 - 環境変数（実値入り）`.env` を作成
 
@@ -75,15 +75,15 @@ brew tap azure/azd && brew install azd
 curl -fsSL https://aka.ms/install-azd.sh | bash
 ```
 
-共通：`azd` バージョン確認 → `azd ai agent` 拡張を入れる。
+共通：`azd` バージョン確認 → `microsoft.foundry` 拡張を入れる。
 
 ```bash
-azd version                                # 1.25.0 以上
-azd ext install azure.ai.agents            # 0.1.34-preview 以上が入ること
-azd ext list                               # azure.ai.agents が表示されればOK
+azd version                                # 1.25.3 以上 (Hosted Agent source-code deploy に必要)
+azd ext install microsoft.foundry          # 最新 Hosted Agent Quickstart で正規となった拡張
+azd ext list                               # microsoft.foundry が表示されればOK
 ```
 
-> `azd ai agent` 拡張のバージョンが 0.1.34-preview 未満の場合は `azd ext upgrade azure.ai.agents` でアップグレード。
+> 拡張名は 2025年末以降 **`microsoft.foundry`** に統一されました (旧 `azure.ai.agents` は存在しても非推奨)。もしすでに入っている場合は `azd ext upgrade microsoft.foundry` でアップグレードしてください。
 
 ---
 
@@ -152,7 +152,7 @@ az role assignment list --assignee "$MY_ID" \
    | プロジェクト名 | `workshop-foundry-<your-alias>` （例 `workshop-foundry-taro`） |
    | Foundry リソース | **新規作成** を選択 |
    | リソースグループ | **新規作成** `rg-workshop-foundry` |
-   | リージョン | **East US 2** （Hosted Agent 対応リージョン。本ワークショップでは East US 2 に統一します） |
+   | リージョン | **North Central US** （Hosted Agent (preview) が利用可能な唯一のリージョン。Lab 3 で使うためここでリージョンを揃えておく） |
 4. **作成** をクリック → 5〜10 分待つ
 5. 完了後、プロジェクトの **Overview** ページで **Project endpoint** をコピー（例：`https://<account>.services.ai.azure.com/api/projects/<project>`）
 
@@ -204,7 +204,7 @@ az role assignment create \
 
 ```pwsh
 $rg = "rg-workshop-foundry"
-$loc = "eastus2"
+$loc = "northcentralus"   # Hosted Agent (preview) 対応リージョン
 $alias = "<your-alias>"   # 英小文字・数字のみ
 $accountName = "foundry-$alias"
 $projectName = "workshop-foundry-$alias"
@@ -222,7 +222,7 @@ az cognitiveservices account project create `
 
 ```bash
 RG="rg-workshop-foundry"
-LOC="eastus2"
+LOC="northcentralus"   # Hosted Agent (preview) 対応リージョン
 ALIAS="<your-alias>"   # 英小文字・数字のみ
 ACCOUNT_NAME="foundry-$ALIAS"
 PROJECT_NAME="workshop-foundry-$ALIAS"
@@ -256,7 +256,7 @@ az cognitiveservices account project show \
 
 ---
 
-## 0-4. gpt-5.4-mini モデルをデプロイ
+## 0-4. gpt-4.1-mini モデルをデプロイ
 
 0-3 のプロジェクトが **プロビジョニング完了** してから実行します（Overview ページで状態が `Succeeded` になっていること）。
 
@@ -264,11 +264,11 @@ az cognitiveservices account project show \
 
 1. Foundry ポータル > 作成したプロジェクトを開く
 2. 左メニュー **Models + endpoints** > **+ Deploy model** > **Deploy base model**
-3. 検索ボックスに `gpt-5.4-mini` を入力 → 選択 → **Confirm**
+3. 検索ボックスに `gpt-4.1-mini` を入力 → 選択 → **Confirm**
 4. デプロイ設定：
    | 項目 | 値 |
    |---|---|
-   | Deployment name | **`gpt-5.4-mini`** ← この値を `.env` の `AZURE_AI_MODEL_DEPLOYMENT_NAME` に使うので**そのまま**にする |
+   | Deployment name | **`gpt-4.1-mini`** ← この値を `.env` の `FOUNDRY_MODEL` に使うので**そのまま**にする |
    | Deployment type | **Global Standard** |
    | Tokens per Minute Rate Limit (TPM) | **30K** で十分（ワークショップ用） |
 5. **Deploy** をクリック → 1〜2 分で完了
@@ -280,8 +280,8 @@ az cognitiveservices account project show \
 ```pwsh
 az cognitiveservices account deployment create `
     -g $rg --name $accountName `
-    --deployment-name "gpt-5.4-mini" `
-    --model-name "gpt-5.4-mini" `
+    --deployment-name "gpt-4.1-mini" `
+    --model-name "gpt-4.1-mini" `
     --model-format "OpenAI" `
     --sku-capacity 30 --sku-name "GlobalStandard"
 ```
@@ -291,8 +291,8 @@ az cognitiveservices account deployment create `
 ```bash
 az cognitiveservices account deployment create \
     -g "$RG" --name "$ACCOUNT_NAME" \
-    --deployment-name "gpt-5.4-mini" \
-    --model-name "gpt-5.4-mini" \
+    --deployment-name "gpt-4.1-mini" \
+    --model-name "gpt-4.1-mini" \
     --model-format "OpenAI" \
     --sku-capacity 30 --sku-name "GlobalStandard"
 ```
@@ -301,7 +301,7 @@ az cognitiveservices account deployment create \
 
 ### 動作確認
 
-Foundry ポータル > **Models + endpoints** に `gpt-5.4-mini` が **Status: Succeeded** で表示されればOK。
+Foundry ポータル > **Models + endpoints** に `gpt-4.1-mini` が **Status: Succeeded** で表示されればOK。
 
 ---
 
@@ -375,15 +375,16 @@ source .venv/bin/activate    # Windows の Git Bash なら source .venv/Scripts/
 ```bash
 pip install --upgrade pip
 
-# Lab 2 (ローカル MAF) 用
-pip install agent-framework-foundry --pre
+# Lab 2 (ローカル MAF) 用 —— Agent Framework Python 1.0.0 GA 以降
+# `--pre` 不要。`aiohttp` は FoundryChatClient の HTTP クライアントが使用。
+pip install agent-framework-foundry aiohttp
 pip install azure-identity python-dotenv pydantic
 
-# Lab 4 (Cloud Evaluation) 用
-pip install "azure-ai-projects>=2.1.0"
+# Lab 4 (Cloud Evaluation) 用 —— evals API は 2.2.0 以降で安定化
+pip install "azure-ai-projects>=2.2.0"
 ```
 
-> `agent-framework-foundry` は preview パッケージなので `--pre` を付けます。`agent-framework[all]` のような umbrella パッケージは依存解決でつまずきやすいので、必要なパッケージを個別指定するこの順番が安全です。
+> Agent Framework Python 1.0.0 は 2026 年初頭に GA したため `--pre` は不要になりました。ただし `agent-framework[all]` umbrella は依存解決に時間がかかるので、上記のように `agent-framework-foundry` + 個別依存を明示するのが安定します。
 
 > Lab 3 (Hosted Agent デプロイ) では `agent-framework-foundry-hosting` も必要になりますが、Lab 3 で `azd ai agent init` を実行すると `requirements.txt` が生成されてそこに記載されるので、ここで明示インストール不要です。
 
@@ -414,7 +415,7 @@ cp .env.sample .env
 code .env    # FOUNDRY_PROJECT_ENDPOINT に 0-3 のエンドポイントを貼り付ける
 ```
 
-書き換えるのは原則 `FOUNDRY_PROJECT_ENDPOINT` の URL だけ。`AZURE_AI_MODEL_DEPLOYMENT_NAME=gpt-5.4-mini` は 0-4 で同名でデプロイしたのでそのままで OK。`HOSTED_AGENT_NAME` / `HOSTED_AGENT_VERSION` は Lab 3 完了後に必要に応じて更新します。
+書き換えるのは原則 `FOUNDRY_PROJECT_ENDPOINT` の URL だけ。`FOUNDRY_MODEL=gpt-4.1-mini` は 0-4 で同名でデプロイしたのでそのままで OK。`HOSTED_AGENT_NAME` / `HOSTED_AGENT_VERSION` は Lab 3 完了後に必要に応じて更新します。
 
 > `.gitignore` には最初から `.env` の除外が含まれているため、誤コミットの心配はありません。
 
@@ -451,7 +452,7 @@ async def main() -> None:
     agent = Agent(
         client=FoundryChatClient(
             project_endpoint=os.environ["FOUNDRY_PROJECT_ENDPOINT"],
-            model=os.environ["AZURE_AI_MODEL_DEPLOYMENT_NAME"],
+            model=os.environ["FOUNDRY_MODEL"],
             credential=AzureCliCredential(),
         ),
         instructions="あなたは日本語アシスタントです。簡潔に答えてください。",
@@ -484,7 +485,7 @@ async def main() -> None:
     agent = Agent(
         client=FoundryChatClient(
             project_endpoint=os.environ["FOUNDRY_PROJECT_ENDPOINT"],
-            model=os.environ["AZURE_AI_MODEL_DEPLOYMENT_NAME"],
+            model=os.environ["FOUNDRY_MODEL"],
             credential=AzureCliCredential(),
         ),
         instructions="あなたは日本語アシスタントです。簡潔に答えてください。",
@@ -512,14 +513,15 @@ python scripts/check_setup.py
 
 - [ ] Python 3.13+ / Azure CLI / Git / **GitHub CLI** / VS Code バージョン確認済み
 - [ ] GitHub Copilot / Python 拡張インストール済み
-- [ ] azd 1.25+ / `azd ai agent` 拡張 0.1.34-preview+ インストール済み（Lab 3 以降用）
+- [ ] azd 1.25.3+ / `microsoft.foundry` 拡張インストール済み（Lab 3 以降用）
 - [ ] `az login` / `azd auth login` / `gh auth login` 済み
 - [ ] **リポジトリを自分の GitHub に fork して clone 済み（`git remote -v` で origin が自分の fork）**
-- [ ] **Foundry プロジェクト作成済み（Overview が Succeeded）**
+- [ ] **Foundry プロジェクト作成済み（Overview が Succeeded / リージョンは North Central US）**
 - [ ] **自分に Foundry Project Manager (`eadc314b-...`) が割り当てられている**
-- [ ] **gpt-5.4-mini モデルデプロイ済み（Models + endpoints で Succeeded）**
+- [ ] **gpt-4.1-mini モデルデプロイ済み（Models + endpoints で Succeeded）**
 - [ ] `.venv` 作成・有効化・パッケージインストール済み（`from agent_framework.foundry import FoundryChatClient` が成功）
-- [ ] `.env` に `FOUNDRY_PROJECT_ENDPOINT` と `AZURE_AI_MODEL_DEPLOYMENT_NAME` を記入済み（`.env.sample` をコピーした）
+- [ ] `.env` に `FOUNDRY_PROJECT_ENDPOINT` と `FOUNDRY_MODEL` を記入済み（`.env.sample` をコピーした）
+- [ ] **`scripts/check_setup.py` の疎通テスト成功**
 - [ ] **`scripts/check_setup.py` の疎通テスト成功**
 
 ---

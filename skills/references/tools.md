@@ -200,7 +200,7 @@ async def main() -> None:
     agent = Agent(
         client=FoundryChatClient(
             project_endpoint="https://<account>.services.ai.azure.com/api/projects/<project>",
-            model="gpt-5.4-mini",
+            model="gpt-4.1-mini",
             credential=AzureCliCredential(),
         ),
         instructions=(

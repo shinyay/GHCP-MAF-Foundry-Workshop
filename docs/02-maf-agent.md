@@ -17,7 +17,7 @@
 
 - [Lab 0](00-setup.md) で `.venv` 有効化済み、`agent-framework-foundry` インストール済み（`from agent_framework.foundry import FoundryChatClient` が成功している）
 - [Lab 1](01-agent-skills.md) で MAF × Foundry の skill が Copilot に認識されていることを確認済み
-- `.env` に `FOUNDRY_PROJECT_ENDPOINT` と `AZURE_AI_MODEL_DEPLOYMENT_NAME` が設定済み
+- `.env` に `FOUNDRY_PROJECT_ENDPOINT` と `FOUNDRY_MODEL` が設定済み
 
 ---
 
@@ -74,7 +74,7 @@ async def main() -> None:
         agent = Agent(
             client=FoundryChatClient(
                 project_endpoint=os.environ["FOUNDRY_PROJECT_ENDPOINT"],
-                model=os.environ["AZURE_AI_MODEL_DEPLOYMENT_NAME"],
+                model=os.environ["FOUNDRY_MODEL"],
                 credential=AzureCliCredential(),
             ),
             name="MSUpdatesAgent",
@@ -137,7 +137,7 @@ async def main() -> None:
         agent = Agent(
             client=FoundryChatClient(
                 project_endpoint=os.environ["FOUNDRY_PROJECT_ENDPOINT"],
-                model=os.environ["AZURE_AI_MODEL_DEPLOYMENT_NAME"],
+                model=os.environ["FOUNDRY_MODEL"],
                 credential=AzureCliCredential(),
             ),
             name="MSUpdatesAgent",

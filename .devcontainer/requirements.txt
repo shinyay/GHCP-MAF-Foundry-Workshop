@@ -1,11 +1,12 @@
 # Devcontainer 内で事前インストールする Python パッケージ
 # (docs/00-setup.md / docs/04-trace-evaluation.md と一致させる)
-# `--pre` は agent-framework-foundry のプレリリース版を有効にするための pip グローバル オプション
---pre
+# Microsoft Agent Framework 1.0 GA 以降は --pre 不要。aiohttp が明示的依存。
 
 agent-framework-foundry
+aiohttp
 azure-identity
 python-dotenv
 pydantic
 pytest
-azure-ai-projects>=2.1.0
+# source-code 方式 Hosted Agent デプロイ (preview) には 2.2.0+ が必要
+azure-ai-projects>=2.2.0

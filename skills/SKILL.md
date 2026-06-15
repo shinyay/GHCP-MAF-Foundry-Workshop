@@ -1,16 +1,24 @@
 ---
 name: agent-framework-azure-ai-py
-description: Microsoft Foundry のエージェントを Microsoft Agent Framework Python SDK (agent-framework-foundry) で作るための skill。FoundryChatClient によるアプリ主導エージェント作成、ホスト型ツール (Code Interpreter / File Search / Web Search) や関数ツールの追加、MCP サーバー連携、AgentSession による会話継続、ストリーミング応答、構造化出力 (Pydantic / JSON Schema)、Foundry Hosted Agent としてのデプロイを扱う。
+description: Microsoft Foundry のエージェントを Microsoft Agent Framework Python SDK (agent-framework-foundry 1.0+) で作るための skill。FoundryChatClient によるアプリ主導エージェント作成、ホスト型ツール (Code Interpreter / File Search / Web Search / Bing Grounding / Image Generation / Azure AI Search / Hosted MCP) や関数ツールの追加、ローカル MCP サーバー連携、AgentSession による会話継続 (アプリ側 / Hosted Agent サービス側両対応)、ストリーミング応答、構造化出力 (Pydantic / JSON Schema)、Foundry Hosted Agent としてのデプロイ (azd ai agent init `--deploy-mode code` / `container`)、OpenTelemetry observability、Cloud Evaluation を扱う。
 license: MIT
 metadata:
   author: Microsoft
-  version: "2.0.0"
+  version: "3.0.0"
   package: agent-framework-foundry
+  agent_framework_version: "1.0+"
 ---
 
 # Agent Framework × Microsoft Foundry (Python)
 
 Microsoft Agent Framework Python SDK と Microsoft Foundry を組み合わせてエージェントを構築するための skill です。
+
+> **このリビジョンの前提**
+> - `agent-framework-foundry` **1.0 GA 以降**を前提にしています。プレリリース用の `--pre` は不要です。
+> - 環境変数の正規名は **`FOUNDRY_MODEL`** です (旧 `AZURE_AI_MODEL_DEPLOYMENT_NAME` は Hosted Agent コンテナへ自動注入される変数名としては残りますが、アプリ コードからは `FOUNDRY_MODEL` を参照してください)。
+> - `azd` 拡張は **`microsoft.foundry`** に統一されました (旧 `azure.ai.agents` は非推奨)。
+> - Hosted Agent (preview) のサポート リージョンは **North Central US** のみです (2026年初頭時点)。
+> - 1.0 で削除された API: `Message(text=...)` (現在は `Message(contents=[TextContent(text=...)])`)、`agent.run_stream(...)` (現在は `agent.run(..., stream=True)`)、`response.try_parse_value()` (現在は `response.value` を `try/except ValidationError` で受ける)、`AzureAIClient` / `AzureAIAgentClient` / `AzureAIProjectAgentProvider` / `AzureAIAgentsProvider` (Foundry SDK に統合)。
 
 ---
 
@@ -43,7 +51,7 @@ Microsoft Agent Framework Python SDK と Microsoft Foundry を組み合わせて
                                ▼
               ┌──────────────────────────────────┐
               │  Microsoft Foundry プロジェクト     │
-              │   - モデルデプロイ (gpt-5.4-mini 等)│
+              │   - モデルデプロイ (gpt-4.1-mini 等)│
               │   - Hosted ツール / Foundry Toolbox │
               │   - 会話履歴 (conversation)         │
               └──────────────────────────────────┘
@@ -54,17 +62,17 @@ Microsoft Agent Framework Python SDK と Microsoft Foundry を組み合わせて
 ## Installation
 
 ```bash
-# アプリ側 (ローカル実行 / CI 評価など)
-pip install agent-framework-foundry azure-identity python-dotenv
+# アプリ側 (ローカル実行 / CI 評価など) - Agent Framework 1.0 GA 以降は --pre 不要
+pip install agent-framework-foundry aiohttp azure-identity python-dotenv
 
 # Hosted Agent としてホストする場合 (main.py 側)
-pip install agent-framework-foundry agent-framework-foundry-hosting python-dotenv
+pip install agent-framework-foundry agent-framework-foundry-hosting aiohttp python-dotenv
 
 # Observability や Evaluation を使う場合
-pip install azure-monitor-opentelemetry "azure-ai-projects>=2.1.0"
+pip install azure-monitor-opentelemetry "azure-ai-projects>=2.2.0"
 ```
 
-> `agent-framework-foundry` は preview パッケージのため `--pre` を付けてインストールします。必要なパッケージを個別に指定すると依存解決が安定します。
+> `aiohttp` は 1.0 GA で明示的な依存になりました (バージョン解決の安定化のため個別指定推奨)。`azure-ai-projects>=2.2.0` は Cloud Evaluation と source-code deploy 双方で必要です。
 
 ## Environment Variables
 
@@ -73,7 +81,8 @@ pip install azure-monitor-opentelemetry "azure-ai-projects>=2.1.0"
 FOUNDRY_PROJECT_ENDPOINT="https://<account>.services.ai.azure.com/api/projects/<project>"
 
 # Foundry プロジェクトにデプロイしたモデルの "Deployment name"
-AZURE_AI_MODEL_DEPLOYMENT_NAME="gpt-5.4-mini"
+# (Agent Framework 1.0 公式 Quickstart の正規名)
+FOUNDRY_MODEL="gpt-4.1-mini"
 
 # (任意) Observability / Foundry App Insights 連携
 APPLICATIONINSIGHTS_CONNECTION_STRING="InstrumentationKey=...;..."
@@ -81,7 +90,9 @@ ENABLE_INSTRUMENTATION=true
 ENABLE_SENSITIVE_DATA=false   # 本番で true にしない (プロンプト/応答が漏れる)
 ```
 
-> Hosted Agent としてデプロイした後は、これらの環境変数は Foundry が **コンテナへ自動注入**します。ローカル開発時のみ `.env` などで設定してください。
+> **`.env` は自動ロードされません**。スクリプト先頭で `from dotenv import load_dotenv; load_dotenv()` を必ず呼んでください。
+>
+> Hosted Agent としてデプロイした後は、Foundry が `FOUNDRY_MODEL` を含む環境変数を**コンテナへ自動注入**します (ただしランタイムによっては `AZURE_AI_MODEL_DEPLOYMENT_NAME` も併せて注入されます。コード側は `FOUNDRY_MODEL` を読めば十分です)。
 
 ## 認証 — DefaultAzureCredential を基本に
 
@@ -114,7 +125,7 @@ async def main() -> None:
     agent = Agent(
         client=FoundryChatClient(
             project_endpoint="https://<account>.services.ai.azure.com/api/projects/<project>",
-            model="gpt-5.4-mini",
+            model="gpt-4.1-mini",
             credential=AzureCliCredential(),
         ),
         name="HelloAgent",
@@ -128,6 +139,20 @@ async def main() -> None:
 if __name__ == "__main__":
     asyncio.run(main())
 ```
+
+> **ショートカット: `.as_agent()`**
+> `FoundryChatClient` (と 1.0 以降の他の ChatClient) には `.as_agent(instructions=..., tools=..., name=...)` ショートカットがあり、`Agent(client=...)` の代わりに使えます。何を使っても同じ `Agent` オブジェクトが返ります。
+>
+> ```python
+> agent = FoundryChatClient(
+>     project_endpoint="...",
+>     model="gpt-4.1-mini",
+>     credential=AzureCliCredential(),
+> ).as_agent(
+>     name="HelloAgent",
+>     instructions="あなたは...",
+> )
+> ```
 
 ### 2) 関数ツールを持たせる
 
@@ -155,7 +180,7 @@ def get_weather(
 agent = Agent(
     client=FoundryChatClient(
         project_endpoint="https://<account>.services.ai.azure.com/api/projects/<project>",
-        model="gpt-5.4-mini",
+        model="gpt-4.1-mini",
         credential=AzureCliCredential(),
     ),
     instructions="日本語で簡潔に答えてください。",
@@ -266,7 +291,7 @@ async def main() -> None:
         agent = Agent(
             client=FoundryChatClient(
                 project_endpoint="https://<account>.services.ai.azure.com/api/projects/<project>",
-                model="gpt-5.4-mini",
+                model="gpt-4.1-mini",
                 credential=AzureCliCredential(),
             ),
             instructions=(
@@ -358,7 +383,7 @@ load_dotenv()
 def main() -> None:
     client = FoundryChatClient(
         project_endpoint=os.environ["FOUNDRY_PROJECT_ENDPOINT"],
-        model=os.environ["AZURE_AI_MODEL_DEPLOYMENT_NAME"],
+        model=os.environ["FOUNDRY_MODEL"],
         credential=DefaultAzureCredential(),
     )
 
@@ -380,26 +405,44 @@ if __name__ == "__main__":
     main()
 ```
 
-必須ファイル:
+デプロイには 2 パターンあります。**どちらも `azd ai agent` 拡張 (`azd ext install microsoft.foundry`)、v1.25.3+ の azd、Foundry Project Manager ロール、そして North Central US リージョン (Hosted Agent preview 制約) が必要**です。
 
-- `main.py` — エントリポイント (`ResponsesHostServer(agent).run()` を呼ぶ)
-- `agent.manifest.yaml` — `azd ai agent init` が生成する Hosted Agent 定義
-- `requirements.txt` — `agent-framework-foundry`, `agent-framework-foundry-hosting`, `python-dotenv`, ...
-- `azure.yaml` — `azd ai agent init` が生成する azd プロジェクト定義
+### パターン A (推奨): ソースコード方式 `--deploy-mode code`
 
-デプロイ:
+コンテナは Foundry がサーバーサイドでビルドします。フラットな zip (`main.py` + `requirements.txt`) をアップロードするだけで OK。Docker / ACR / Bicep は不要です。
 
 ```bash
-azd ai agent init      # 対話: Basic agent (Responses, Agent Framework, Python) を選ぶ
-azd provision          # Foundry プロジェクト + ACR + App Insights + Model を作成
-azd ai agent run       # ローカルで http://localhost:8088 起動
+# 1. スキャフォールド (対話式、もしくはフラグで一括指定)
+azd ai agent init --deploy-mode code --runtime python_3_13 --entry-point main.py
+# 2. Provision + deploy を一括実行
+azd up
+# 3. ローカル動作確認 (任意、Inspector UI を無効化)
+azd ai agent run --no-inspector
 azd ai agent invoke --local "Hello"
-azd deploy             # コンテナをビルド → ACR push → Foundry へデプロイ
+# 4. クラウド側を呼ぶ
 azd ai agent invoke "Hello"
 azd ai agent monitor --follow   # ログをストリーミング
 ```
 
-> `azd ai agent provision` / `azd ai agent up` / `azd ai agent deploy` は **存在しません**。プロビジョン/デプロイは `azd provision` / `azd deploy` を使います (azd ai agent ext 配下のサブコマンドは `init`, `run`, `invoke`, `show`, `monitor` のみ)。
+生成されるファイル (コード方式):
+
+- `main.py` — エントリポイント
+- `requirements.txt` — `agent-framework-foundry`, `agent-framework-foundry-hosting`, `aiohttp`, `python-dotenv`, ...
+- `agent.manifest.json` — Hosted Agent 定義 (モデル, リソース, env mapping など)
+- `azure.yaml` — azd プロジェクト定義
+- `infra/` — 最小限の Bicep
+
+### パターン B (Stretch): コンテナ方式 `--deploy-mode container`
+
+```bash
+azd ai agent init --deploy-mode container
+azd provision      # ACR + App Insights + Managed Identity を作成
+azd deploy         # コンテナをビルド → ACR push → Foundry へデプロイ
+```
+
+Dockerfile + Bicep 一式が生成され、コンテナイメージのカスタマイズやプライベート ACR 使用が可能。柔軟だが設定項目が多いため、通常はパターン A を推奨します。
+
+> **「存在しないサブコマンド」に注意**: `azd ai agent provision` / `azd ai agent up` / `azd ai agent deploy` は**存在しません**。Provision/deploy は azd 本体の `azd up` / `azd provision` / `azd deploy` を使います。`azd ai agent` 拡張のサブコマンドは `init`, `run`, `invoke`, `show`, `monitor` などだけです。
 
 ---
 

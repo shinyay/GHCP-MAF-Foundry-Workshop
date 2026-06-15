@@ -91,6 +91,47 @@ print(r1.conversation_id)  # → "conv_xxxxx" など
 
 ---
 
+## Hosted Agent サービス側セッション (推奨パターン: 2026 Foundry 1.0+)
+
+`FoundryAgent` (= Foundry にデプロイ済みの Hosted Agent を Python から呼ぶケース) では、**OpenAI 互換クライアントの `conversations.create()` で取得した conversation オブジェクト** を `agent.get_session(...)` に渡すことで、複数ターンが同じサンドボックスにバインドされます。これにより、Hosted Agent コンテナの状態 (Code Interpreter の作業ディレクトリ、File Search の中間結果、in-context メモリなど) がターンをまたいで保たれます。
+
+```python
+from agent_framework.foundry import FoundryAgent
+from azure.ai.projects import AIProjectClient
+from azure.identity import AzureCliCredential
+
+credential = AzureCliCredential()
+project_client = AIProjectClient(
+    endpoint=os.environ["FOUNDRY_PROJECT_ENDPOINT"],
+    credential=credential,
+)
+openai_client = project_client.get_openai_client()
+
+# 1. Foundry 側で空の conversation を作る (server-side session)
+conversation = openai_client.conversations.create()
+
+agent = FoundryAgent(
+    agent_name=os.environ["HOSTED_AGENT_NAME"],
+    credential=credential,
+    allow_preview=True,
+)
+
+# 2. agent.get_session(...) で session を作り、その conversation_id にバインド
+session = agent.get_session(conversation.id)
+
+# 3. 以降のターンは session を渡すだけで Foundry 側が同じ sandbox を使う
+r1 = await agent.run("CSV を集計するスクリプトを書いて", session=session)
+r2 = await agent.run("いま作った関数をテストするケースを 3 つ追加して", session=session)
+```
+
+> **`agent.create_session()` (アプリ主導) との違い**
+> - `agent.create_session()` は **アプリ側のローカル AgentSession** を作るだけで、`store=True` の場合に Foundry 側で会話を確保するのは初回 `agent.run()` のタイミング。
+> - `openai_client.conversations.create()` → `agent.get_session(...)` は **会話確保を明示的に先行**させるので、Hosted Agent コンテナの sandbox を確実に同じものに紐付けたい場合 (Code Interpreter / File Search を絡めた長い対話など) に向いています。
+
+`FoundryChatClient` (= アプリ主導エージェント) でも同じ方法が使えます。`FoundryChatClient` は内部で OpenAI 互換 client を露出しているため、上記のように先に conversation を作ってから `agent.get_session(conversation.id)` を呼べば OK です。
+
+---
+
 ## ローカル履歴 vs サーバー保持
 
 `Agent` / `FoundryChatClient` には会話履歴の管理方針を切り替えるオプションがあります。

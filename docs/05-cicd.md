@@ -40,10 +40,10 @@ $token = az account get-access-token --scope https://ai.azure.com/.default --que
 gh secret set AZURE_AI_AUTH_TOKEN --body $token
 
 # 3. ワークフローが使う Variables (公開されても良い値。.env / Lab 4 で設定したものをそのまま)
-gh variable set FOUNDRY_PROJECT_ENDPOINT       --body "<Lab 0 で取得した endpoint>"
-gh variable set AZURE_AI_MODEL_DEPLOYMENT_NAME --body "gpt-5.4-mini"
-gh variable set HOSTED_AGENT_NAME              --body "ms-updates-agent"
-gh variable set HOSTED_AGENT_VERSION           --body "1"
+gh variable set FOUNDRY_PROJECT_ENDPOINT --body "<Lab 0 で取得した endpoint>"
+gh variable set FOUNDRY_MODEL            --body "gpt-4.1-mini"
+gh variable set HOSTED_AGENT_NAME        --body "ms-updates-agent"
+gh variable set HOSTED_AGENT_VERSION     --body "1"
 ```
 
 **Bash**
@@ -56,10 +56,10 @@ TOKEN=$(az account get-access-token --scope https://ai.azure.com/.default --quer
 gh secret set AZURE_AI_AUTH_TOKEN --body "$TOKEN"
 
 # 3. Variables
-gh variable set FOUNDRY_PROJECT_ENDPOINT       --body "<Lab 0 で取得した endpoint>"
-gh variable set AZURE_AI_MODEL_DEPLOYMENT_NAME --body "gpt-5.4-mini"
-gh variable set HOSTED_AGENT_NAME              --body "ms-updates-agent"
-gh variable set HOSTED_AGENT_VERSION           --body "1"
+gh variable set FOUNDRY_PROJECT_ENDPOINT --body "<Lab 0 で取得した endpoint>"
+gh variable set FOUNDRY_MODEL            --body "gpt-4.1-mini"
+gh variable set HOSTED_AGENT_NAME        --body "ms-updates-agent"
+gh variable set HOSTED_AGENT_VERSION     --body "1"
 ```
 
 > ブラウザ操作派の場合: **Settings** > **Secrets and variables** > **Actions** で `AZURE_AI_AUTH_TOKEN` を Secret、残り 4 つを Variables として手動追加。
@@ -172,8 +172,8 @@ jobs:
       - name: Install
         run: |
           python -m pip install --upgrade pip
-          pip install "agent-framework-foundry" --pre
-          pip install azure-identity python-dotenv pytest "azure-ai-projects>=2.1.0"
+          pip install agent-framework-foundry aiohttp
+          pip install azure-identity python-dotenv pytest "azure-ai-projects>=2.2.0"
       - name: Test
         run: pytest tests/ -v || true
 
@@ -188,8 +188,8 @@ jobs:
       - name: Install
         run: |
           python -m pip install --upgrade pip
-          pip install "agent-framework-foundry" --pre
-          pip install azure-identity python-dotenv "azure-ai-projects>=2.1.0"
+          pip install agent-framework-foundry aiohttp
+          pip install azure-identity python-dotenv "azure-ai-projects>=2.2.0"
       - name: Run Cloud Evaluation
         id: eval
         env:
@@ -197,7 +197,7 @@ jobs:
           # ci/run_evaluate.py がこれを AzureCliCredential の代わりに使う
           AZURE_AI_AUTH_TOKEN: ${{ secrets.AZURE_AI_AUTH_TOKEN }}
           FOUNDRY_PROJECT_ENDPOINT: ${{ vars.FOUNDRY_PROJECT_ENDPOINT }}
-          AZURE_AI_MODEL_DEPLOYMENT_NAME: ${{ vars.AZURE_AI_MODEL_DEPLOYMENT_NAME }}
+          FOUNDRY_MODEL: ${{ vars.FOUNDRY_MODEL }}
           HOSTED_AGENT_NAME: ${{ vars.HOSTED_AGENT_NAME }}
           HOSTED_AGENT_VERSION: ${{ vars.HOSTED_AGENT_VERSION }}
         run: |
@@ -267,7 +267,7 @@ async def main() -> None:
         agent = Agent(
             client=FoundryChatClient(
                 project_endpoint=os.environ["FOUNDRY_PROJECT_ENDPOINT"],
-                model=os.environ["AZURE_AI_MODEL_DEPLOYMENT_NAME"],
+                model=os.environ["FOUNDRY_MODEL"],
                 credential=AzureCliCredential(),
             ),
             name="MSUpdatesAgent",

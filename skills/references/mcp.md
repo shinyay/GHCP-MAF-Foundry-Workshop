@@ -48,7 +48,7 @@ async def main() -> None:
         agent = Agent(
             client=FoundryChatClient(
                 project_endpoint="https://<account>.services.ai.azure.com/api/projects/<project>",
-                model="gpt-5.4-mini",
+                model="gpt-4.1-mini",
                 credential=AzureCliCredential(),
             ),
             instructions=(
@@ -99,7 +99,7 @@ async with MCPWebsocketTool(name="WS", url="wss://example.com/mcp") as ws_mcp:
 agent = Agent(
     client=FoundryChatClient(
         project_endpoint=os.environ["FOUNDRY_PROJECT_ENDPOINT"],
-        model=os.environ["AZURE_AI_MODEL_DEPLOYMENT_NAME"],
+        model=os.environ["FOUNDRY_MODEL"],
         credential=DefaultAzureCredential(),
     ),
     instructions="Microsoft Learn を必ず参照して回答します。",
