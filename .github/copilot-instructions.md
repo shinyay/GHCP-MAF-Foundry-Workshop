@@ -135,11 +135,11 @@ from azure.identity import DefaultAzureCredential  # 本番 / CI
 
 詳細:
 - 4 chatmodes 仕様: [`.github/agents/`](agents/)
-- 移植時の調整点: [`.github/agents/ADAPTATION.md`](agents/ADAPTATION.md)
 - カタログ (architecture / prompt / skill / agent / scenarios): [`docs/copilot-surface/`](../docs/copilot-surface/)
 - KB (82 entries): [`kb-1.8.0/`](../kb-1.8.0/)
 
-> [!NOTE]
-> 既存の `kb-1.8.0/README.md` (v3.0.0) と `kb-1.8.0/` (4 entries) も従来通り利用可能です。
-> 新規 `kb-1.8.0/` は **chatmodes が読む詳細 KB** として独立しており、workshop 全体の
-> "skill"・コード生成ガイドラインの正規ソースは引き続き `kb-1.8.0/README.md` です。
+> [!IMPORTANT]
+> このリポジトリの正規 KB は **[`kb-1.8.0/`](../kb-1.8.0/)** です (旧 `skills/SKILL.md` から
+> 2026-06-15 に移行)。chatmode 利用時 + Copilot にコード生成を任せる時、Copilot は
+> `kb-1.8.0/patterns/` `kb-1.8.0/anti-patterns/` `kb-1.8.0/api-reference/1.8.0/` を
+> 参照して canonical pattern を提供します。
