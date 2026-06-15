@@ -123,20 +123,17 @@ from azure.identity import DefaultAzureCredential  # 本番 / CI
 ## 🆕 GitHub Copilot Chatmode 拡張 (Plan G からの移植)
 
 このリポジトリには Plan G ([source](https://github.com/shinyay/ms-agent-framework-template-v1.8.0))
-から **4 つの specialist chatmodes** が追加されました。VS Code Insider の Copilot Chat
+から **2 つの specialist chatmodes** が追加されました。VS Code Insider の Copilot Chat
 モード dropdown で選択できます:
 
 | Chatmode | 用途 | この workshop での使い方 |
 |---|---|---|
 | `af-architect` | Pre-implementation design advisor | Lab 開始時、要件を設計ブリーフに変換するのに使う |
 | `af-implementer` | Code generation + verification | Lab 中、設計を Python コードに落とすのに使う |
-| `af-reviewer` | Post-implementation review | Lab 完了前、コードの anti-pattern スキャン用 |
-| `foundry-ops` | Foundry environment + Azure CLI triage | Lab 0/3 の Foundry 環境構築・トラブル時 |
 
 詳細:
-- 4 chatmodes 仕様: [`.github/agents/`](agents/)
-- カタログ (architecture / prompt / skill / agent / scenarios): [`docs/copilot-surface/`](../docs/copilot-surface/)
-- KB (82 entries): [`kb-1.8.0/`](../kb-1.8.0/)
+- 2 chatmodes 仕様: [`.github/agents/`](agents/)
+- KB (81 entries): [`kb-1.8.0/`](../kb-1.8.0/)
 
 > [!IMPORTANT]
 > このリポジトリの正規 KB は **[`kb-1.8.0/`](../kb-1.8.0/)** です (旧 `skills/SKILL.md` から

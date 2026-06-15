@@ -430,7 +430,7 @@ evals = FoundryEvals(model=judge_model)
 > [!IMPORTANT]
 > `FOUNDRY_JUDGE_MODEL` is a **repo convention**, not an SDK-recognized variable. The Foundry SDK does not read it on its own — every call site that constructs `FoundryEvals(...)` must read the env var and pass `model=` explicitly. Setting `FOUNDRY_JUDGE_MODEL=…` in `.env` without code that consumes it does nothing. Each `.env.example` in this repo carries the optional `FOUNDRY_JUDGE_MODEL=gpt-5-4` comment so the convention is discoverable.
 
-See [`foundry-environment-pitfalls.md` § P-7](foundry-environment-pitfalls.md#p-7--foundryevals-default-judge-is-gpt-4o-deprecated) for the environment / provisioning lens on the same pitfall (deployment names, `ServiceModelDeprecated`, `.env.example` rollout).
+See [`eval-as-test-substitute.md` § 10](#10-calling-foundryevals-without-model-judge-fallback-pitfall) above for the framework-side pitfall (FoundryEvals SDK fallback). For environment-side mitigations (deployment names, `ServiceModelDeprecated`, `.env.example` rollout), consult `gswaf-eastus-1779503648`-style provisioning logs or [`docs/foundry-provisioning.md`](../../docs/foundry-provisioning.md) when present.
 
 ### How to detect
 
@@ -451,7 +451,7 @@ rg -n "FoundryEvals\(" --glob "*.py" tests templates examples src | \
 - Pattern: [`../patterns/agent-evaluation-local.md`](../patterns/agent-evaluation-local.md)
 - Pattern: [`../patterns/agent-evaluation-foundry.md`](../patterns/agent-evaluation-foundry.md)
 - Pattern: [`../patterns/workflow-evaluation.md`](../patterns/workflow-evaluation.md)
-- Anti-pattern (environment lens): [`./foundry-environment-pitfalls.md` § P-7](./foundry-environment-pitfalls.md#p-7--foundryevals-default-judge-is-gpt-4o-deprecated) — judge model defaults + deployment / `ServiceModelDeprecated` mitigations
+- Anti-pattern (judge fallback): [`./eval-as-test-substitute.md` § 10](./eval-as-test-substitute.md#10-calling-foundryevals-without-model-judge-fallback-pitfall) — `FoundryEvals(model=)` requirement + `ServiceModelDeprecated` mitigations
 
 ---
 

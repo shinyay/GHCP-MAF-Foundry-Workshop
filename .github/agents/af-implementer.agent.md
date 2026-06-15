@@ -117,11 +117,11 @@ If the user asks for something not yet documented:
 
 ## Hand-off
 
-This chatmode is part of a 4-chatmode family (see `.github/agents/README.md`). Receive and dispatch as follows:
+This chatmode is part of a 2-chatmode family (see `.github/agents/README.md`). Receive and dispatch as follows:
 
 - **Receive from `af-architect`**: a design doc (pattern selections + tool inventory + risk register). Respect the architect's minimum-viable scope; downscope optional extensions only with cited rationale.
-- **Hand off to `af-reviewer`**: present the diff + a one-paragraph change summary. `af-reviewer` produces the severity-grouped report; do not self-review.
-- **Escalate to `foundry-ops`**: when the blocker is environmental (RBAC, model deployment name mismatch, Bing connection ID, DNS to Foundry endpoint, empty `.env` in Codespaces). Do not provision or rotate credentials yourself.
+- **Terminal step in this workshop.** After producing the diff and verifying it with the language tooling (at minimum `python3 -m compileall`), present the diff + a one-paragraph change summary to the developer. The developer is responsible for the final human-eye review against `kb-1.8.0/anti-patterns/` before running the code.
+- **Environmental blockers** (RBAC, model deployment name mismatch, Bing connection ID, DNS to Foundry endpoint, empty `.env` in Codespaces) — stop, document the missing prerequisite, and surface it to the developer in the change summary. Do not provision or rotate credentials yourself.
 
 ## Companion Prompts
 

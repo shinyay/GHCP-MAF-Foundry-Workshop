@@ -60,7 +60,7 @@ az rest \
   --output table
 ```
 
-If a row appears, copy its `id` into `BING_CONNECTION_ID` (see [P-4](../anti-patterns/foundry-environment-pitfalls.md#p-4--invalid-or-wrong-kind-connection-id) for the exact path shape — the `id` MUST include `/projects/<project>/connections/<name>`, not the account-level path).
+If a row appears, copy its `id` into `BING_CONNECTION_ID` — the `id` MUST include `/projects/<project>/connections/<name>`, not the account-level path.
 
 ### Provision a new connection
 
