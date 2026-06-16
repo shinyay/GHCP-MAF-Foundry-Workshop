@@ -171,7 +171,7 @@ $projectName = "workshop-foundry-<your-alias>"
 $myId = az ad signed-in-user show --query id -o tsv
 
 $projectId = az cognitiveservices account project show `
-    -g $rg --account-name $accountName --name $projectName --query id -o tsv
+    -g $rg -n $accountName --project-name $projectName --query id -o tsv
 
 az role assignment create `
     --role "eadc314b-1a2d-4efa-be10-5d325db5065e" `
@@ -188,7 +188,7 @@ PROJECT_NAME="workshop-foundry-<your-alias>"
 MY_ID=$(az ad signed-in-user show --query id -o tsv)
 
 PROJECT_ID=$(az cognitiveservices account project show \
-    -g "$RG" --account-name "$ACCOUNT_NAME" --name "$PROJECT_NAME" --query id -o tsv)
+    -g "$RG" -n "$ACCOUNT_NAME" --project-name "$PROJECT_NAME" --query id -o tsv)
 
 az role assignment create \
     --role "eadc314b-1a2d-4efa-be10-5d325db5065e" \
@@ -214,8 +214,15 @@ az cognitiveservices account create `
     -g $rg -n $accountName -l $loc `
     --kind AIServices --sku S0 `
     --custom-domain $accountName --yes
+
+# allowProjectManagement を有効化（project create の前に必須）
+$accountId = az cognitiveservices account show -g $rg -n $accountName --query id -o tsv
+az resource update --ids $accountId --set properties.allowProjectManagement=true
+
 az cognitiveservices account project create `
-    -g $rg --account-name $accountName --name $projectName
+    -g $rg -n $accountName `
+    --project-name $projectName `
+    -l $loc
 ```
 
 **Bash**
@@ -232,8 +239,16 @@ az cognitiveservices account create \
     -g "$RG" -n "$ACCOUNT_NAME" -l "$LOC" \
     --kind AIServices --sku S0 \
     --custom-domain "$ACCOUNT_NAME" --yes
+
+# allowProjectManagement を有効化（project create の前に必須）
+az resource update \
+    --ids $(az cognitiveservices account show -g "$RG" -n "$ACCOUNT_NAME" --query id -o tsv) \
+    --set properties.allowProjectManagement=true
+
 az cognitiveservices account project create \
-    -g "$RG" --account-name "$ACCOUNT_NAME" --name "$PROJECT_NAME"
+    -g "$RG" -n "$ACCOUNT_NAME" \
+    --project-name "$PROJECT_NAME" \
+    -l "$LOC"
 ```
 
 エンドポイント取得：
@@ -242,7 +257,8 @@ az cognitiveservices account project create \
 
 ```pwsh
 az cognitiveservices account project show `
-    -g $rg --account-name $accountName --name $projectName `
+    -g $rg -n $accountName `
+    --project-name $projectName `
     --query "properties.endpoints.\"AI Foundry API\"" -o tsv
 ```
 
@@ -250,7 +266,8 @@ az cognitiveservices account project show `
 
 ```bash
 az cognitiveservices account project show \
-    -g "$RG" --account-name "$ACCOUNT_NAME" --name "$PROJECT_NAME" \
+    -g "$RG" -n "$ACCOUNT_NAME" \
+    --project-name "$PROJECT_NAME" \
     --query 'properties.endpoints."AI Foundry API"' -o tsv
 ```
 
@@ -281,8 +298,10 @@ az cognitiveservices account deployment create `
     -g $rg --name $accountName `
     --deployment-name "gpt-4.1-mini" `
     --model-name "gpt-4.1-mini" `
+    --model-version "2025-04-14" `
     --model-format "OpenAI" `
-    --sku-name "GlobalStandard"
+    --sku-name "GlobalStandard" `
+    --sku-capacity 1
 ```
 
 **Bash**
@@ -292,11 +311,17 @@ az cognitiveservices account deployment create \
     -g "$RG" --name "$ACCOUNT_NAME" \
     --deployment-name "gpt-4.1-mini" \
     --model-name "gpt-4.1-mini" \
+    --model-version "2025-04-14" \
     --model-format "OpenAI" \
-    --sku-name "GlobalStandard"
+    --sku-name "GlobalStandard" \
+    --sku-capacity 1
 ```
 
-> モデルバージョンを明示したい場合は `--model-version 2025-xx-xx` を追加してください。バージョンは Foundry ポータルの **Models + endpoints > Model catalog** で確認できます。
+> `--model-version` と `--sku-capacity` は CLI 2.87.0 以降で必須です。利用可能なバージョンは以下で確認できます：
+> ```bash
+> az cognitiveservices account list-models -g "$RG" -n "$ACCOUNT_NAME" \
+>     --query "[?name=='gpt-4.1-mini'].version" -o tsv
+> ```
 
 ### 動作確認
 
