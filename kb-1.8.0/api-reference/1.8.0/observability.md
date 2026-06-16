@@ -463,7 +463,7 @@ print(inspect.signature(obs.configure_otel_providers))
 #  views=None, vs_code_extension_port=None, env_file_path=None, env_file_encoding=None) -> None
 
 # 3. FoundryChatClient.__init__ has NO instrumentation_enabled kwarg
-from agent_framework_foundry import FoundryChatClient
+from agent_framework.foundry import FoundryChatClient
 print(list(inspect.signature(FoundryChatClient.__init__).parameters))
 # ['self', 'project_endpoint', 'project_client', 'model', 'credential', 'allow_preview',
 #  'default_headers', 'env_file_path', 'env_file_encoding', 'instruction_role',
@@ -479,7 +479,7 @@ except ImportError as e:
 # FABRICATED: cannot import name 'is_instrumentation_enabled' from 'agent_framework.observability'
 
 # 5. Provider class vars
-from agent_framework_foundry import FoundryChatClient, FoundryAgent
+from agent_framework.foundry import FoundryChatClient, FoundryAgent
 print(FoundryChatClient.OTEL_PROVIDER_NAME)  # azure.ai.foundry
 print(FoundryAgent.AGENT_PROVIDER_NAME)      # microsoft.agent_framework
 ```

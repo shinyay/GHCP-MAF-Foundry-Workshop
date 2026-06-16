@@ -52,7 +52,7 @@ These surfaces shipped in 1.8.0 but are not auto-wired into the existing templat
 Use this when you already have a rubric evaluator authored in Foundry and want to run it through the Agent Framework eval pipeline. The runnable scaffold is [`../../templates/adaptive-evals/`](../../templates/adaptive-evals/); the API reference is [`../api-reference/1.8.0/evaluation.md`](../api-reference/1.8.0/evaluation.md) and the warning model is [`feature-stages.md`](../api-reference/1.8.0/feature-stages.md#adaptive-evals-and-mcpskillssource-new-in-180).
 
 ```python
-from agent_framework_foundry import GeneratedEvaluatorRef, FoundryEvals
+from agent_framework.foundry import GeneratedEvaluatorRef, FoundryEvals
 from agent_framework._evaluation import EvalResults
 
 ref = GeneratedEvaluatorRef.latest(name="support-quality")
@@ -113,7 +113,7 @@ If your derived repo directly used either upstream surface, test that code befor
 ```bash
 python -m pip install -r requirements.txt
 python -m compileall -q .
-python -W ignore -c "from agent_framework_foundry import GeneratedEvaluatorRef, FoundryEvals; from agent_framework._evaluation import EvalResults"
+python -W ignore -c "from agent_framework.foundry import GeneratedEvaluatorRef, FoundryEvals; from agent_framework._evaluation import EvalResults"
 python -W ignore -c "from agent_framework import MCPSkillsSource, FunctionInvocationContext, AgentFileStore, FileAccessProvider"
 python -W ignore -c "from agent_framework import BackgroundAgentsProvider, BackgroundTaskInfo, BackgroundTaskStatus, AgentSession, AgentResponse, create_harness_agent"
 ```
