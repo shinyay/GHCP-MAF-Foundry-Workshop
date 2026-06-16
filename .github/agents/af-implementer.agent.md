@@ -71,6 +71,69 @@ These bugs were fixed in PR #11. Do **not** reintroduce them when generating exa
   - Provide error messages that tell the user **what to check next**
 - When picking patterns, treat `kb-1.8.0/anti-patterns/` as a **hard gate** — never generate code matching a WRONG example in those docs.
 
+## Code Generation Cheat Sheet (MUST follow — verified against 1.8.0)
+
+Every code snippet you generate **MUST** conform to these rules. Copy-paste accuracy is critical — do NOT improvise import paths, constructor arguments, or parameter names.
+
+### Imports (exact paths — no alternatives)
+
+```python
+from agent_framework.foundry import FoundryChatClient          # ← NOT agent_framework_foundry
+from agent_framework import MCPStreamableHTTPTool               # ← top-level, NOT from .foundry
+from azure.identity.aio import AzureCliCredential               # ← .aio (async), NOT azure.identity
+from dotenv import load_dotenv
+```
+
+### FoundryChatClient — 3 required constructor arguments
+
+```python
+client = FoundryChatClient(
+    project_endpoint=endpoint,   # ← REQUIRED
+    model=model,                 # ← REQUIRED — pass here, NOT to as_agent()
+    credential=credential,       # ← REQUIRED
+)
+```
+
+- `FoundryChatClient` is **NOT** an async context manager — do NOT write `async with FoundryChatClient(...)`.
+- `model=` goes on the **client**, never on `as_agent()`. `as_agent()` does not accept a `model` parameter.
+
+### as_agent() — key parameters
+
+```python
+async with client.as_agent(
+    name="AgentName",            # ← display name
+    instructions="...",          # ← system prompt
+    tools=[...],                 # ← list of tools
+) as agent:
+```
+
+- `as_agent()` returns an `Agent` which IS an async context manager — always `async with`.
+- Does NOT accept: `model=`, `thread=`, `middleware=`, `response_format=`.
+
+### MCPStreamableHTTPTool — 2 required arguments
+
+```python
+mcp_tool = MCPStreamableHTTPTool(name="ToolName", url="https://...")
+# ← name= and url= are REQUIRED positional-or-keyword args
+# ← Do NOT use uri=, endpoint=, or any other parameter name
+```
+
+### Response access
+
+```python
+response = await agent.run("query")
+print(response.text)             # ← .text for the final text output
+# response.value is ONLY for structured output (when response_format= was set)
+# Do NOT use str(response) or response.value as a general fallback
+```
+
+### Environment variable pattern
+
+```python
+model = os.environ.get("FOUNDRY_MODEL") or os.environ["AZURE_AI_MODEL_DEPLOYMENT_NAME"]
+# ← FOUNDRY_MODEL for local, AZURE_AI_MODEL_DEPLOYMENT_NAME for Hosted Agent containers
+```
+
 ## Workflow
 
 1. Read the related files to understand current behavior and intent.
