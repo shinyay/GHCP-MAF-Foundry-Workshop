@@ -69,7 +69,7 @@ cd agent
 azd ai agent init --deploy-mode code --runtime python_3_13 --entry-point main.py
 ```
 
-> **`--deploy-mode code` が重要です** 。これにより Docker 不要のソースコードデプロイ (`main.py` + `requirements.txt` をそのまま zip して Foundry サービス側でホスト) モードになります。コンテナイメージビルドと ACR は不要になり、デプロイ時間も大幅に短縮されます (概ね 1〜2 分)。
+> **`--deploy-mode code` が重要です** 。これにより Docker 不要のソースコードデプロイ (`main.py` + `requirements.txt` をそのまま zip して Foundry サービス側でホスト) モードになります。コンテナイメージビルドと ACR は不要になり、デプロイ時間も大幅に短縮されます (概ね 1〜2 分)。もし--deploy-modeが不正というエラーになった場合、azure.ai.agentsのバージョンが古い可能性がありますので、`azd extension upgrade azure.ai.agents`を実行してアップデートを実施してください。
 
 インタラクティブな質問に答えます (回答例は公式 Quickstart 準拠)：
 
