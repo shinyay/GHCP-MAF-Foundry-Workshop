@@ -122,7 +122,7 @@ The decorator uses a module-level `_WARNED_FEATURES: set[tuple[type[Warning], st
 Decorated functions and classes carry two attributes you can probe at runtime to audit a codebase or write a custom lint:
 
 ```python
-from agent_framework_foundry import FoundryChatClient
+from agent_framework.foundry import FoundryChatClient
 
 stage = getattr(FoundryChatClient.get_bing_grounding_tool, "__feature_stage__", None)
 feature = getattr(FoundryChatClient.get_bing_grounding_tool, "__feature_id__", None)
