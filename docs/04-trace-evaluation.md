@@ -7,7 +7,6 @@
 - 組み込み評価器（`builtin.task_adherence`, `builtin.tool_call_accuracy`, `builtin.intent_resolution`, `builtin.coherence`）でエージェント品質を採点する
 - ここで作る `src/evaluate.py` は、**Lab 5 の CI/CD パイプラインからそのまま再利用**します
 
-> Lab 3 完了済み（Hosted Agent が `azd ai agent show` で Active）が前提です。ローカルエージェント (Lab 2) のトレースは本ワークショップでは扱いません (Hosted Agent が自動で OpenTelemetry を送信してくれるため)。
 
 ---
 
@@ -15,41 +14,11 @@
 
 Hosted Agent は **デフォルトで OpenTelemetry トレースを Foundry に送信** します。あなたはコード変更も追加設定も不要です。
 
-### 4-1-1. トラフィックを発生させる
-
-```bash
-# agent/ ディレクトリで
-azd ai agent invoke "Azure Functions の最新の機能更新を 5 件、新しい順に教えて"
-azd ai agent invoke "Microsoft Copilot Studio で今四半期に GA になった機能は？"
-azd ai agent invoke "Defender for Cloud で Retiring になる機能を教えて"
-```
-
-### 4-1-2. Foundry ポータルで確認
-
 1. [https://ai.azure.com](https://ai.azure.com) を開く
 2. 該当プロジェクトを選択
-3. 左メニュー **Observability** > **Traces**
-4. 直近のリクエストが時系列で表示される（**90 日間保持**）
-5. 1 件クリック → スパン階層が展開
-
-確認ポイント：
-
-- ルート span: `agent.run` (ストリーミング時も同名。内部で `ResponseStream` を返す)
-- 子 span: LLM 呼び出し (`chat.completions.create` 等) のレイテンシとトークン数
-- 子 span: ツール呼び出し (`search_microsoft_release_messages` 等) の入出力
-- エラー時は span が赤くなり stack trace が見える
-
-### 4-1-3. Application Insights でも確認できる
-
-`azd provision` で作られた Application Insights にも同じデータが流れています。Azure ポータル > 該当リソースグループ > Application Insights > **Transaction search** で SQL 風クエリも可。
-
-```kusto
-traces
-| where timestamp > ago(1h)
-| where operation_Name contains "agent"
-| project timestamp, message, severityLevel
-| order by timestamp desc
-```
+3. 右上 **ビルド** を選択し、左メニュー **エージェント** > 作成したエージェントを選択
+4. エージェントのチャット画面が開くので、任意の入力を実施して応答を待つ
+5. エージェントのチャット画面の上部の **トレース** を選択し、表示されたトレースIDを１つ選択
 
 ---
 
@@ -99,169 +68,192 @@ src/evaluate.py を新規作成してください。
 要件:
 - Microsoft Foundry の Cloud Evaluation を作成し、
   Lab 3 でデプロイした Hosted Agent をターゲットに評価する
-- 評価器は task_adherence / tool_call_accuracy / intent_resolution / coherence
+- 評価器は　intent_resolution
 - テストデータは data/eval_inputs.json から読む
 - run 完了までポーリングし、最後に Foundry の評価結果 URL を表示する
-- このスクリプトは Lab 5 の CI/CD からも同じものをそのまま使うので、
-  Hosted Agent の名前とバージョンは環境変数から読むこと
+- Hosted Agent の名前とバージョンは環境変数から読むこと
 ````
-
-Copilot は [kb-1.8.0/README.md](../kb-1.8.0/README.md) と [Foundry Cloud Evaluation の公式ドキュメント (Agent target evaluation)](https://learn.microsoft.com/azure/foundry/how-to/develop/cloud-evaluation#agent-target-evaluation) を参照し、以下を自動で補完してくれます：
-
-- `azure-ai-projects` の `AIProjectClient` → `get_openai_client()` で client を取得
-- `data_source_config` に `"include_sample_schema": True` を必ず付ける
-- 各評価器を `{"type": "azure_ai_evaluator", "evaluator_name": "builtin.xxx", "initialization_parameters": {"deployment_name": ...}, "data_mapping": {...}}` の正しい 5 点セットで構成
-- `tool_call_accuracy` / `task_adherence` は `sample.output_items`、その他は `sample.output_text` を `data_mapping.response` に ([評価器ごとの data_mapping 早見表](https://learn.microsoft.com/azure/foundry/how-to/develop/cloud-evaluation#agent-target-evaluation))
-- `data_source.type = "azure_ai_target_completions"` + `input_messages` テンプレート + `target.type = "azure_ai_agent"`
-- run をポーリングして結果 URL を表示するパターン ([azure-ai-projects の評価サンプル sample_agent_evaluation.py](https://github.com/Azure/azure-sdk-for-python/blob/main/sdk/ai/azure-ai-projects/samples/evaluations/sample_agent_evaluation.py))
-- Hosted Agent の名前とバージョンは環境変数から読む
 
 完成イメージ：
 
 ```python
+"""Run Foundry Cloud Evaluation against the Lab 3 Hosted Agent."""
+
 import json
 import os
+import sys
 import time
-from datetime import datetime
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import Any
 
-from dotenv import load_dotenv
 from azure.ai.projects import AIProjectClient
 from azure.identity import AzureCliCredential
+from dotenv import dotenv_values
 
-load_dotenv()
 
-# 1. Foundry project クライアントを作り、OpenAI 互換クライアントを取得
-project_client = AIProjectClient(
-    endpoint=os.environ["FOUNDRY_PROJECT_ENDPOINT"],
-    credential=AzureCliCredential(),
-)
-client = project_client.get_openai_client()
+TERMINAL_STATUSES = {"completed", "failed", "canceled"}
+POLL_INTERVAL_SECONDS = 60
+MAX_POLL_ATTEMPTS = 30
 
-# 2. ジャッジモデルと Hosted Agent 名
-model_deployment = os.environ["FOUNDRY_MODEL"]
-agent_name = os.environ["HOSTED_AGENT_NAME"]
-agent_version = os.environ.get("HOSTED_AGENT_VERSION", "1")
 
-# 3. テストデータを読み込み inline content に変換
-inputs = json.load(open("data/eval_inputs.json", encoding="utf-8"))
-ts = datetime.utcnow().strftime("%Y%m%d-%H%M%S")
+def load_dotenv_fill_only() -> None:
+    """Load repository .env values without overriding non-empty environment values."""
+    dotenv_path = Path(__file__).resolve().parents[1] / ".env"
+    for key, value in dotenv_values(dotenv_path).items():
+        if value is None:
+            continue
+        if not (os.getenv(key) or "").strip():
+            os.environ[key] = value
 
-# 4. 評価定義 (data_source_config + testing_criteria)
-data_source_config = {
-    "type": "custom",
-    "item_schema": {
-        "type": "object",
-        "properties": {"query": {"type": "string"}},
-        "required": ["query"],
-    },
-    "include_sample_schema": True,   # ターゲット出力を sample.* で参照するため必須
-}
 
-testing_criteria = [
-    {
-        "type": "azure_ai_evaluator",
-        "name": "task_adherence",
-        "evaluator_name": "builtin.task_adherence",
-        "initialization_parameters": {"deployment_name": model_deployment},
-        "data_mapping": {
-            "query": "{{item.query}}",
-            "response": "{{sample.output_items}}",   # tool_call を含む JSON
-        },
-    },
-    {
-        "type": "azure_ai_evaluator",
-        "name": "tool_call_accuracy",
-        "evaluator_name": "builtin.tool_call_accuracy",
-        "initialization_parameters": {"deployment_name": model_deployment},
-        "data_mapping": {
-            "query": "{{item.query}}",
-            "response": "{{sample.output_items}}",
-        },
-    },
-    {
-        "type": "azure_ai_evaluator",
-        "name": "intent_resolution",
-        "evaluator_name": "builtin.intent_resolution",
-        "initialization_parameters": {"deployment_name": model_deployment},
-        "data_mapping": {
-            "query": "{{item.query}}",
-            "response": "{{sample.output_text}}",
-        },
-    },
-    {
-        "type": "azure_ai_evaluator",
-        "name": "coherence",
-        "evaluator_name": "builtin.coherence",
-        "initialization_parameters": {"deployment_name": model_deployment},
-        "data_mapping": {
-            "query": "{{item.query}}",
-            "response": "{{sample.output_text}}",
-        },
-    },
-]
+def require_env(name: str) -> str:
+    """Return a required environment variable or fail with an actionable message."""
+    value = (os.getenv(name) or "").strip()
+    if not value:
+        raise RuntimeError(
+            f"{name} が未設定または空です。.env に {name} を設定してから再実行してください。"
+        )
+    return value
 
-eval_def = client.evals.create(
-    name=f"ms-updates-eval-{ts}",
-    data_source_config=data_source_config,
-    testing_criteria=testing_criteria,
-)
-print(f"Eval definition: {eval_def.id}")
 
-# 5. ターゲット (Hosted Agent) + input_messages テンプレート + inline ソース
-input_messages = {
-    "type": "template",
-    "template": [
+def load_eval_inputs(path: Path) -> list[dict[str, str]]:
+    """Load evaluation inputs from the workshop JSON array."""
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError as exc:
+        raise RuntimeError(f"評価データが見つかりません: {path}") from exc
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(f"評価データの JSON が不正です: {path}") from exc
+
+    if not isinstance(data, list):
+        raise RuntimeError(f"評価データは JSON 配列にしてください: {path}")
+
+    inputs: list[dict[str, str]] = []
+    for index, item in enumerate(data, start=1):
+        if not isinstance(item, dict) or not isinstance(item.get("query"), str):
+            raise RuntimeError(f"評価データ {index} 件目には文字列の query が必要です。")
+        query = item["query"].strip()
+        if not query:
+            raise RuntimeError(f"評価データ {index} 件目の query が空です。")
+        inputs.append({"query": query})
+
+    return inputs
+
+
+def build_testing_criteria(model_deployment: str) -> list[dict[str, Any]]:
+    """Build the intent_resolution evaluator definition for Cloud Evaluation."""
+    return [
         {
-            "type": "message",
-            "role": "developer",
-            "content": {"type": "input_text", "text": "与えられた質問に出典付きで簡潔に答えてください。"},
+            "type": "azure_ai_evaluator",
+            "name": "intent_resolution",
+            "evaluator_name": "builtin.intent_resolution",
+            "initialization_parameters": {"deployment_name": model_deployment},
+            "data_mapping": {
+                "query": "{{item.query}}",
+                "response": "{{sample.output_text}}",
+            },
+        }
+    ]
+
+
+def build_data_source(inputs: list[dict[str, str]], agent_name: str, agent_version: str) -> dict[str, Any]:
+    """Build the Hosted Agent target and inline evaluation input source."""
+    return {
+        "type": "azure_ai_target_completions",
+        "source": {
+            "type": "file_content",
+            "content": [{"item": item} for item in inputs],
         },
-        {
-            "type": "message",
-            "role": "user",
-            "content": {"type": "input_text", "text": "{{item.query}}"},
+        "input_messages": {
+            "type": "template",
+            "template": [
+                {
+                    "type": "message",
+                    "role": "developer",
+                    "content": {
+                        "type": "input_text",
+                        "text": "与えられた質問に出典付きで簡潔に答えてください。",
+                    },
+                },
+                {
+                    "type": "message",
+                    "role": "user",
+                    "content": {"type": "input_text", "text": "{{item.query}}"},
+                },
+            ],
         },
-    ],
-}
+        "target": {
+            "type": "azure_ai_agent",
+            "name": agent_name,
+            "version": agent_version,
+        },
+    }
 
-data_source = {
-    "type": "azure_ai_target_completions",
-    "source": {
-        "type": "file_content",
-        "content": [{"item": {"query": q["query"]}} for q in inputs],
-    },
-    "input_messages": input_messages,
-    "target": {
-        "type": "azure_ai_agent",
-        "name": agent_name,
-        "version": agent_version,
-    },
-}
 
-run = client.evals.runs.create(
-    eval_id=eval_def.id,
-    name=f"run-{ts}",
-    data_source=data_source,
-)
-print(f"Run started: {run.id}")
+def main() -> None:
+    """Create and run a Foundry Cloud Evaluation run."""
+    load_dotenv_fill_only()
 
-# 6. ポーリング
-for _ in range(30):
-    status = client.evals.runs.retrieve(eval_id=eval_def.id, run_id=run.id)
-    print(f"  status={status.status}")
-    if status.status in ("completed", "failed", "canceled"):
-        break
-    time.sleep(60)
+    project_endpoint = require_env("FOUNDRY_PROJECT_ENDPOINT")
+    model_deployment = require_env("FOUNDRY_MODEL")
+    agent_name = require_env("HOSTED_AGENT_NAME")
+    agent_version = os.getenv("HOSTED_AGENT_VERSION", "1").strip() or "1"
+    inputs = load_eval_inputs(Path("data/eval_inputs.json"))
+    timestamp = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
 
-print(f"\nResult: https://ai.azure.com/evaluation/{eval_def.id}/runs/{run.id}")
+    project_client = AIProjectClient(
+        endpoint=project_endpoint,
+        credential=AzureCliCredential(),
+    )
+    client = project_client.get_openai_client()
+
+    eval_definition = client.evals.create(
+        name=f"ms-updates-eval-{timestamp}",
+        data_source_config={
+            "type": "custom",
+            "item_schema": {
+                "type": "object",
+                "properties": {"query": {"type": "string"}},
+                "required": ["query"],
+            },
+            "include_sample_schema": True,
+        },
+        testing_criteria=build_testing_criteria(model_deployment),
+    )
+    print(f"Evaluation definition: {eval_definition.id}")
+
+    run = client.evals.runs.create(
+        eval_id=eval_definition.id,
+        name=f"run-{timestamp}",
+        data_source=build_data_source(inputs, agent_name, agent_version),
+    )
+    print(f"Run started: {run.id}")
+
+    final_status = "unknown"
+    for _ in range(MAX_POLL_ATTEMPTS):
+        status = client.evals.runs.retrieve(eval_id=eval_definition.id, run_id=run.id)
+        final_status = status.status
+        print(f"  status={final_status}")
+        if final_status in TERMINAL_STATUSES:
+            break
+        time.sleep(POLL_INTERVAL_SECONDS)
+
+    result_url = f"https://ai.azure.com/evaluation/{eval_definition.id}/runs/{run.id}"
+    print(f"\nResult: {result_url}")
+
+    if final_status != "completed":
+        raise RuntimeError(f"Cloud Evaluation run が completed になりませんでした: {final_status}")
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except RuntimeError as exc:
+        print(f"エラー: {exc}", file=sys.stderr)
+        raise SystemExit(1) from exc
 ```
 
-> **重要ポイント**
-> - `data_source_config` には `include_sample_schema: True` を必ず指定する（これがないと `sample.output_*` を `data_mapping` で参照できない）
-> - `testing_criteria` の要素は **`type: "azure_ai_evaluator"`** で、組み込み評価器名は `evaluator_name: "builtin.xxx"` に書く
-> - **`input_messages` テンプレート**を渡し、その中で `{{item.query}}` を `user` メッセージに展開する
-> - `tool_call_accuracy` / `task_adherence` は `{{sample.output_items}}`（tool_call を含む構造化 JSON）、`coherence` / `intent_resolution` は `{{sample.output_text}}`（プレーンテキスト）を使う
-> - run status は `succeeded` ではなく **`completed`** で終了する（公式 enum）
 
 ### 4-2-4. 環境変数追加
 
@@ -271,6 +263,7 @@ print(f"\nResult: https://ai.azure.com/evaluation/{eval_def.id}/runs/{run.id}")
 HOSTED_AGENT_NAME=ms-updates-agent
 HOSTED_AGENT_VERSION=1
 ```
+必要であればバージョン番号はご自身の環境の適切なものに変更してください
 
 ### 4-2-5. 実行
 
@@ -282,100 +275,11 @@ python src/evaluate.py
 
 ### 4-2-6. Foundry ポータルで結果確認
 
-1. ポータル > **Evaluation** > 該当 run
-2. **Metrics** タブ: 評価器ごとの平均スコア
-3. **Items** タブ: サンプル毎の入出力と各評価器の判定 / 理由
-
-### 評価器のヒント
-
-| 評価器 | 何を見る |
-|---|---|
-| `builtin.task_adherence` | エージェントが指示通りのタスクを完了したか |
-| `builtin.tool_call_accuracy` | 適切なツールを適切な引数で呼んだか |
-| `builtin.intent_resolution` | ユーザー意図を正しく解釈したか |
-| `builtin.coherence` | 応答が論理的に一貫しているか |
-| `builtin.relevance` | 質問への関連性 |
-| `builtin.groundedness` | 取得した情報に基づいているか（hallucination 検出） |
-| `builtin.fluency` | 自然な言語表現か |
-
----
-
-## 4-3. ★Stretch: コンテンツ安全性評価
-
-`builtin.violence` / `builtin.self_harm` / `builtin.hate_unfairness` / `builtin.sexual` を `testing_criteria` に追加すると、生成内容の有害性をスキャンできます。コンテンツ安全性評価器は `initialization_parameters` 不要 (Foundry がサービスで判定) です。
-
-```python
-safety_criteria = [
-    {
-        "type": "azure_ai_evaluator",
-        "name": "violence",
-        "evaluator_name": "builtin.violence",
-        "data_mapping": {
-            "query": "{{item.query}}",
-            "response": "{{sample.output_text}}",
-        },
-    },
-    {
-        "type": "azure_ai_evaluator",
-        "name": "self_harm",
-        "evaluator_name": "builtin.self_harm",
-        "data_mapping": {
-            "query": "{{item.query}}",
-            "response": "{{sample.output_text}}",
-        },
-    },
-    {
-        "type": "azure_ai_evaluator",
-        "name": "hate_unfairness",
-        "evaluator_name": "builtin.hate_unfairness",
-        "data_mapping": {
-            "query": "{{item.query}}",
-            "response": "{{sample.output_text}}",
-        },
-    },
-    {
-        "type": "azure_ai_evaluator",
-        "name": "sexual",
-        "evaluator_name": "builtin.sexual",
-        "data_mapping": {
-            "query": "{{item.query}}",
-            "response": "{{sample.output_text}}",
-        },
-    },
-]
-
-testing_criteria = testing_criteria + safety_criteria   # 4-2-3 のリストに追加
-```
-
----
-
-## 4-4. ★Stretch: 評価結果を CI に流す
-
-Lab 5 で、PR ごとに自動評価し結果を PR コメントに投稿するワークフローを作ります。**この Lab で書いた `src/evaluate.py` がそのまま CI でも呼ばれる**ため、評価用コードを重複して書く必要はありません。
-
----
-
-## トラブルシューティング
-
-| 症状 | 対処 |
-|---|---|
-| Hosted Agent のトレースが Foundry ポータルに出ない | 90 秒〜数分の遅延あり / `azd ai agent invoke` で何回かリクエストを送ってから見てみる |
-| `client.evals` で AttributeError | `AIProjectClient` を直接使わず `project_client.get_openai_client()` 経由で client を取る |
-| `Unknown evaluator type` 系エラー | `testing_criteria[i].type` は **`"azure_ai_evaluator"`** にして、組み込み名は `evaluator_name: "builtin.xxx"` に書く |
-| `sample.output_text を data_mapping で解決できない` 系エラー | `data_source_config` に `"include_sample_schema": True` を追加 |
-| Cloud Eval が `failed` で終わる | エージェントが `Active` か / `HOSTED_AGENT_NAME` / `HOSTED_AGENT_VERSION` / `input_messages` の有無を確認 |
-| `builtin.tool_call_accuracy` が常に低い | `instructions` でツールの使い方を具体的に書く |
-| 評価料金が心配 | サンプル件数を 3〜5 に絞る、4-2-3 で件数を `inputs[:3]` に |
-
----
-
-## チェックリスト
-
-- [ ] `azd ai agent invoke` 3 回以上叩いて Foundry > Observability > Traces にスパンが出る
-- [ ] `data/eval_inputs.json` 作成
-- [ ] `src/evaluate.py` 作成（Lab 5 でそのまま再利用するので、ローカルで走らせておくことが重要）
-- [ ] `python src/evaluate.py` で run id 取得・ステータス `completed`
-- [ ] Foundry ポータル > Evaluation で各評価器のスコア確認
+1. [https://ai.azure.com](https://ai.azure.com) を開く
+2. 該当プロジェクトを選択
+3. 右上 **ビルド** を選択し、左メニュー **評価**
+4. 評価一覧から名前をクリック
+5. 評価の実行の名前をクリックして、評価結果を確認
 
 ---
 

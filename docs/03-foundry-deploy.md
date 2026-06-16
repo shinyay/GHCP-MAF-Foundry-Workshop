@@ -77,7 +77,7 @@ azd ai agent init --deploy-mode code --runtime python_3_13 --entry-point main.py
 |---|---|---|
 | 1 | Language | **Python** |
 | 2 | Starter template | **Basic agent (Responses, Agent Framework, Python)** |
-| 3 | Agent name | **`ms-updates-agent`** (任意) |
+| 3 | Agent name | **`ms-updates-agent`** |
 | 4 | Deployment type | **Code deploy** (上記 `--deploy-mode code` で指定済み) |
 | 5 | Runtime | **Python 3.13** (上記 `--runtime python_3_13` で指定済み) |
 | 6 | Entry point | **`main.py`** (上記 `--entry-point main.py` で指定済み) |
@@ -96,12 +96,14 @@ azd ai agent init --deploy-mode code --runtime python_3_13 --entry-point main.py
 ### 生成されたファイル
 
 ```
-agent/
+agent/<your agent name>/
 ├─ azure.yaml                  ← azd プロジェクト定義 (services.host: foundryagent)
-├─ agent.manifest.yaml         ← Hosted Agent 定義 (モデル、runtime: python_3_13、entry-point等)
-├─ main.py                     ← エントリポイント (テンプレート)
-├─ requirements.txt            ← agent-framework-foundry, agent-framework-foundry-hosting, ...
-└─ infra/                      ← 必要な Bicep (Log Analytics / App Insights のみ。ACR 不要)
+├─ infra/                      ← 必要な Bicep (Log Analytics / App Insights のみ。ACR 不要)
+└─ src/<your agent name>/
+    ├─ agent.yaml              ← Hosted Agent 定義 (モデル、runtime: python_3_13、entry-point等)
+    ├─ main.py                 ← エントリポイント (テンプレート)
+    ├─ requirements.txt        ← agent-framework-foundry, agent-framework-foundry-hosting, ...
+    └─ infra/                  ← 必要な Bicep (Log Analytics / App Insights のみ。ACR 不要)
 ```
 
 > **Dockerfile は生成されません** 。ソースコードデプロイモードでは Foundry 側が指定された runtime (python_3_13) で `requirements.txt` をインストールし、`main.py` を起動します。もしコンテナ方式を試したい場合は **付録 A** を参照してください。
@@ -110,10 +112,10 @@ agent/
 
 ## 3-3. `main.py` を Lab 2 のロジックに差し替える
 
-`agent/<your agent name>/main.py` を開いて、テンプレートを置き換えます。Copilot Chat で：
+`agent/<your agent name>/src/<your agent name>/main.py` を開いて、テンプレートを置き換えます。Copilot Chat で：
 
 ````
-agent配下のmain.py を以下のように書き換えてください。
+agentフォルダ内の main.py を以下のように書き換えてください。
 
 要件：
 - Lab 2 の src/agent.py と同じ「MSUpdatesAgent」を、
@@ -134,39 +136,66 @@ Copilot は [Microsoft Agent Framework の Foundry Hosted Agent サンプル (`R
 
 ```python
 import os
-from dotenv import load_dotenv
+
 from agent_framework import Agent
 from agent_framework.foundry import FoundryChatClient
 from agent_framework_foundry_hosting import ResponsesHostServer
 from azure.identity import DefaultAzureCredential
+from dotenv import load_dotenv
 
 load_dotenv()
 
-INSTRUCTIONS = """あなたは Microsoft 365 と Azure の最新リリース情報を回答する
-日本語アシスタントです。必ず MRC MCP のツールを使って情報を取得し、
-回答に出典 URL を添えてください。"""
+AGENT_NAME = "MSUpdatesAgent"
+MRC_MCP_URL = "https://www.microsoft.com/releasecommunications/mcp"
+
+INSTRUCTIONS = """あなたは Microsoft 365 と Azure の最新リリース情報を回答する日本語エージェントです。
+
+必ず Microsoft Release Communications MCP のツールを使って一次情報を取得してから回答してください。
+MRC MCP のツールを使わずに、一般知識や推測だけで回答してはいけません。
+
+回答ルール:
+- 回答は必ず日本語にしてください。
+- Microsoft 365 または Azure のリリース情報に絞って、要点を簡潔にまとめてください。
+- 日付、対象製品、影響範囲、利用者が取るべき対応が分かる場合は含めてください。
+- 回答の末尾に「出典:」として、MRC MCP から得た出典 URL を必ず添えてください。
+- MRC MCP で該当情報が見つからない場合も、その旨を日本語で説明し、参照した URL を示してください。
+"""
+
+
+def require_env(name: str) -> str:
+    """Return a required environment variable or fail with an actionable message."""
+    value = (os.getenv(name) or "").strip()
+    if not value:
+        raise RuntimeError(f"{name} が未設定または空です。Foundry の環境変数設定を確認してください。")
+    return value
+
+
+def resolve_model() -> str:
+    """Resolve the local or hosted model deployment name."""
+    model = (os.getenv("FOUNDRY_MODEL") or "").strip()
+    if model:
+        return model
+    return require_env("AZURE_AI_MODEL_DEPLOYMENT_NAME")
 
 
 def main() -> None:
     client = FoundryChatClient(
-        project_endpoint=os.environ["FOUNDRY_PROJECT_ENDPOINT"],
-        # ローカルは .env の FOUNDRY_MODEL、デプロイ後は Foundry が注入する
-        # AZURE_AI_MODEL_DEPLOYMENT_NAME を使う (コンテナに FOUNDRY_MODEL は注入されない)
-        model=os.environ.get("FOUNDRY_MODEL") or os.environ["AZURE_AI_MODEL_DEPLOYMENT_NAME"],
+        project_endpoint=require_env("FOUNDRY_PROJECT_ENDPOINT"),
+        model=resolve_model(),
         credential=DefaultAzureCredential(),
+    )
+
+    mrc_mcp_tool = client.get_mcp_tool(
+        name="mrc_release_communications",
+        url=MRC_MCP_URL,
+        approval_mode="never_require",
     )
 
     agent = Agent(
         client=client,
-        name="MSUpdatesAgent",
+        name=AGENT_NAME,
         instructions=INSTRUCTIONS,
-        tools=[
-            client.get_mcp_tool(
-                name="MRC",
-                url="https://www.microsoft.com/releasecommunications/mcp",
-                approval_mode="never_require",
-            ),
-        ],
+        tools=[mrc_mcp_tool],
         default_options={"store": False},
     )
 
@@ -177,8 +206,6 @@ def main() -> None:
 if __name__ == "__main__":
     main()
 ```
-
-> **Lab 2 と Lab 3 の差分は Copilot が skill から自動推論する部分**。Lab 2 は CLI 実行なので `MCPStreamableHTTPTool` + `AzureCliCredential`、Lab 3 はコンテナ実行なので `get_mcp_tool` + `DefaultAzureCredential` + `store: False` ── このパターンマッチが skill 側に書いてあるため、開発者はその区別を覚えていなくても済みます。
 
 > [!IMPORTANT]
 > モデル名は `os.environ.get("FOUNDRY_MODEL") or os.environ["AZURE_AI_MODEL_DEPLOYMENT_NAME"]` と **フォールバック付きで読む**。ローカル実行では `.env` の `FOUNDRY_MODEL` が、`azd up` でデプロイした Hosted Agent コンテナでは Foundry が注入する `AZURE_AI_MODEL_DEPLOYMENT_NAME` が使われます。`os.environ["FOUNDRY_MODEL"]` だけだと **コンテナ起動時に `KeyError` で落ちます**（コンテナに `FOUNDRY_MODEL` は注入されない）。
@@ -193,6 +220,7 @@ agent-framework-foundry-hosting
 aiohttp
 azure-identity
 python-dotenv
+mcp
 ```
 
 `aiohttp` は `FoundryChatClient` の HTTP クライアントが使うため、明示的に含めておくとデプロイ時の依存解決エラーを避けられます。無いものがあれば追記してください。
@@ -201,7 +229,7 @@ python-dotenv
 
 ## 3-4. `azd up` で provision + deploy を一括実行
 
-`agent/<your agent name>/` ディレクトリ配下のmain.pyで：
+`agent/<your agent name>/` ディレクトリ配下で：
 
 ```bash
 azd up
@@ -229,46 +257,14 @@ Deploying services (azd deploy)
 
 完了まで 3〜5 分 (コンテナ方式より 2〜3 分高速)。
 
-> `azd ai agent provision` / `azd ai agent up` / `azd ai agent deploy` は **存在しません** 。必ず `azd up` / `azd provision` / `azd deploy` (拡張不要) を使ってください。もし provision と deploy を分けてデバッグしたい場合は `azd provision` → `azd deploy` の順で呼べます。
-
 ---
 
-## 3-5. ローカルで動作確認 (任意)
-
-すでに `azd up` でデプロイ済みのため 3-5 はスキップしても OK ですが、`azd up` 前にコードだけをローカル検証したい場合は以下を使います:
-
-```bash
-azd ai agent run --no-inspector
-```
-
-このコマンドは:
-1. 一時的な仮想環境を作る (Python 3.13 必須)
-2. `requirements.txt` をインストール
-3. `agent.manifest.yaml` に定義された entry-point (`main.py`) を起動
-4. `http://localhost:8088/responses` で API を公開
-
-> `--no-inspector` を付けると Inspector UI を起動せず、ツール起動が高速化されます。Inspector を使いたい場合はフラグを外してください。
-
-別のターミナルで (`agent/` ディレクトリで):
-
-```bash
-azd ai agent invoke --local "今四半期に GA になった Azure AI 関連の更新を 3 件教えて"
-```
-
-応答が返ってくればローカル動作 OK です。`Ctrl+C` でローカルサーバーを停止。
-
-### Windows ARM64 の注意
-
-Windows ARM64 環境では `aiohttp` / `grpcio` / `cryptography` / `httptools` のプリビルド wheel が無く、ソースビルドに Microsoft C++ Build Tools が必要です。この場合 **3-5 をスキップして `azd up` のクラウドデプロイで動作確認** してください。
-
----
-
-## 3-6. デプロイされたエージェントを呼ぶ
+## 3-5. デプロイされたエージェントを呼ぶ
 
 ### CLI から
 
 ```bash
-azd ai agent invoke "今四半期に GA になった Azure AI 関連の更新を 3 件教えて"
+azd ai agent invoke "最近 GA になった Azure 機能を 3 件教えて"
 ```
 
 ### ステータス確認
@@ -301,9 +297,9 @@ azd ai agent monitor --follow
 
 ---
 
-## 3-7. ★Stretch: コード変更を反映してみる
+## 3-6. ★Stretch: コード変更を反映してみる
 
-`agent/main.py` の `INSTRUCTIONS` を編集して、もう一度 `azd deploy` を叩くだけで新バージョンがデプロイされます (二回目以降は provision 不要なので `azd up` より `azd deploy` のほうが高速)。
+`main.py` の `INSTRUCTIONS` を編集して、もう一度 `azd deploy` を叩くだけで新バージョンがデプロイされます (二回目以降は provision 不要なので `azd up` より `azd deploy` のほうが高速)。
 
 ```bash
 azd deploy
@@ -341,27 +337,8 @@ azd ai agent init --deploy-mode container --runtime python_3_13
 | `azd ai agent init` が `--deploy-mode` オプションを認識しない | `azd extension upgrade azure.ai.agents` を実行して拡張を最新化 |
 | `SubscriptionNotRegistered` | `az provider register --namespace Microsoft.CognitiveServices` |
 | `AuthorizationFailed` during provisioning | **Foundry Project Manager** + **Contributor** が必要。Lab 0 を再確認 |
-| `AuthenticationError` / `DefaultAzureCredential` failure | `azd auth logout && azd auth login` |
-| `ResourceNotFound` / `DeploymentNotFound` | `FOUNDRY_PROJECT_ENDPOINT` と `FOUNDRY_MODEL` を Foundry ポータルで再確認 |
-| `Connection refused` on local run | ポート 8088 が他のプロセスに使われている |
-| **Hosted MCP が呼ばれない** | `instructions` でツールを明示 / `approval_mode="never_require"` を確認 |
-| `LocationNotAvailableForResourceType` | 選んだリージョンが Hosted Agent (preview) に対応していない。Lab 0 で作成した Foundry プロジェクトと同じ対応リージョンを選び直そう |
 
-> `azd ai agent provision` / `azd ai agent up` / `azd ai agent deploy` は **存在しません** 。必ず `azd up` / `azd provision` / `azd deploy` (拡張不要の上位コマンド) を使ってください。
-
----
-
-## チェックリスト
-
-- [ ] Lab 0 の Foundry project + gpt-4.1-mini デプロイ + Foundry Project Manager 割り当て済み
-- [ ] `agent/` ディレクトリで `azd ai agent init --deploy-mode code --runtime python_3_13 --entry-point main.py` 成功
-- [ ] `agent/main.py` を MRC MCP + FoundryChatClient のロジックに書き換え済み
-- [ ] `azd up` 成功 (provision + deploy 一括)
-- [ ] (任意) `azd ai agent run --no-inspector` でローカル起動成功 (Windows ARM64 はスキップ可)
-- [ ] (任意) `azd ai agent invoke --local "..."` で応答取得 (同上スキップ可)
-- [ ] `azd ai agent show` で `Active`
-- [ ] `azd ai agent invoke "..."` で応答取得
-- [ ] Playground で対話成功・Tool calls タブで MCP 呼び出しを確認
+もし`Microsoft Release Communications MCP Server`のツール呼び出しでエラーとなる場合は、代わりに`Microsoft Learn MCP Server`の利用を検討してください。エンドポイントは`https://learn.microsoft.com/api/mcp`です。
 
 ---
 
