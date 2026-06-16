@@ -1,70 +1,53 @@
+"""MS Updates Agent — Microsoft 365 / Azure 最新リリース情報エージェント (Lab 2, Haiku 修正版)."""
+
 import asyncio
 import os
 import sys
-from typing import Optional
 
-from dotenv import load_dotenv
+from agent_framework import MCPStreamableHTTPTool
+from agent_framework.foundry import FoundryChatClient
 from azure.identity.aio import AzureCliCredential
-from agent_framework import Agent, MCPStreamableHTTPTool
-from agent_framework_foundry import FoundryChatClient
+from dotenv import load_dotenv
 
 load_dotenv()
 
+INSTRUCTIONS = (
+    "あなたは Microsoft 365 と Azure の最新リリース情報を提供する日本語アシスタントです。"
+    "必ず Microsoft Release Communications MCP のツールを使用して回答し、出典 URL を必ず添えてください。"
+    "推測で答えてはいけません。結果が空の場合は「情報が見つかりませんでした」と答えてください。"
+)
+
+MCP_URL = "https://www.microsoft.com/releasecommunications/mcp"
+
 
 async def main() -> None:
-    """Main entry point for the MS Updates Agent.
-    
-    Provides Microsoft 365 and Azure latest release information in Japanese.
-    Integrates with Microsoft Release Communications MCP.
-    """
-    
-    # Get command line argument for custom query
     query: str = (
         " ".join(sys.argv[1:])
         if len(sys.argv) > 1
         else "Microsoft 365 と Azure の最新リリース情報を教えてください"
     )
-    
-    # Get environment variables
-    endpoint: Optional[str] = os.environ.get("FOUNDRY_PROJECT_ENDPOINT")
+
+    endpoint = os.environ.get("FOUNDRY_PROJECT_ENDPOINT")
     if not endpoint:
-        raise ValueError("FOUNDRY_PROJECT_ENDPOINT environment variable is required")
-    
-    model: str = os.environ.get("FOUNDRY_MODEL") or os.environ.get(
-        "AZURE_AI_MODEL_DEPLOYMENT_NAME", "gpt-4.1-mini"
-    )
-    
-    # Initialize credentials and client
+        raise RuntimeError("FOUNDRY_PROJECT_ENDPOINT が未設定です。.env を確認してください。")
+
+    model = os.environ.get("FOUNDRY_MODEL") or os.environ["AZURE_AI_MODEL_DEPLOYMENT_NAME"]
+
+    mrc_mcp = MCPStreamableHTTPTool(name="MRC", url=MCP_URL)
+
     async with AzureCliCredential() as credential:
-        client: FoundryChatClient = FoundryChatClient(
-            credential=credential, project_endpoint=endpoint
+        client = FoundryChatClient(
+            project_endpoint=endpoint,
+            model=model,
+            credential=credential,
         )
-        
-        # Create MCP tool for Microsoft Release Communications
-        mrc_tool: MCPStreamableHTTPTool = MCPStreamableHTTPTool(
-            uri="https://www.microsoft.com/releasecommunications/mcp"
-        )
-        
-        # Create and run agent
         async with client.as_agent(
             name="MSUpdatesAgent",
-            model=model,
-            instructions=(
-                "あなたは Microsoft 365 と Azure の最新リリース情報を提供する日本語アシスタントです。"
-                "必ず Microsoft Release Communications MCP のツールを使用して回答し、出典 URL を必ず添えてください。"
-            ),
-            tools=[mrc_tool],
+            instructions=INSTRUCTIONS,
+            tools=[mrc_mcp],
         ) as agent:
-            agent_instance: Agent = agent
-            
-            # Run the agent with the query
-            response = await agent_instance.run(query)
-            
-            # Print the response
-            result: str = (
-                response.value if hasattr(response, "value") else str(response)
-            )
-            print(result)
+            response = await agent.run(query)
+            print(response.text)
 
 
 if __name__ == "__main__":
